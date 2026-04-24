@@ -367,6 +367,10 @@ export function catchCell(state, cellIdx) {
   if (!hand) return null;
   const cmp = compareHandVsRevealed(hand, cell.value);
   if (cmp === "lose") return null;
+  // On the 5-turn, claiming any cell with a 5 adjacent (revealed OR deduced
+  // face-down) would trigger the catch mechanic and score 0. Refuse rather
+  // than pretend it scored.
+  if (hand === "5" && !isSafeFor5Turn(state, cellIdx)) return null;
 
   const snapshot = {
     kind: "catch",

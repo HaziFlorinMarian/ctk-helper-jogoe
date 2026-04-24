@@ -114,6 +114,11 @@ main {
 .cell.revealed.unscored { opacity: 0.55; cursor: pointer; }
 .cell.revealed.unscored:hover { opacity: 0.85; border-color: var(--accent); }
 
+/* Unscored but unclaimable on the current turn — 5-turn with a 5 adjacent.
+ * Clicking would be caught in-game, so the helper blocks it too. */
+.cell.revealed.unscored-locked { cursor: not-allowed; opacity: 0.35; }
+.cell.revealed.unscored-locked:hover { opacity: 0.4; border-color: var(--border); }
+
 .cell[data-value="1"] { color: var(--v1); }
 .cell[data-value="2"] { color: var(--v2); }
 .cell[data-value="3"] { color: var(--v3); }

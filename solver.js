@@ -215,6 +215,9 @@ function scoreCell(state, cellIdx, hand, pFive, distribution) {
 }
 
 function describeReason(state, hand, cellIdx, detail) {
+  if (detail.kind === "catch") {
+    return `Catch the revealed ${detail.value} for +${detail.points} (ends turn)`;
+  }
   if (hand === "K") {
     const bingoPart = detail.bingoBonus ? ` (+bingo ${detail.bingoBonus})` : "";
     if (detail.pK >= 0.999) return `King is here — catch for +100${bingoPart}`;
@@ -287,23 +290,51 @@ export function suggestMove(state) {
   }
 
   const hidden = hiddenCells(state);
-  if (hidden.length === 0) return null;
-
   const pFive = fiveProbabilities(state);
   const distribution = cellValueDistribution(state);
-  const { mustNotBe5 } = deriveConstraints(state);
 
   let bestCell = null;
   let bestScore = -Infinity;
   let bestDetail = null;
   for (const idx of hidden) {
-    const { score, detail } = scoreCell(state, idx, hand, pFive, distribution, mustNotBe5);
+    const { score, detail } = scoreCell(state, idx, hand, pFive, distribution);
     if (score > bestScore) {
       bestScore = score;
       bestCell = idx;
       bestDetail = detail;
     }
   }
+
+  // Same-value catches: revealed-unscored cells whose value equals the current
+  // hand card. These guarantee points but end the turn. They're particularly
+  // valuable when the cell is UNREACHABLE during the 5-turn (adjacent to a 5),
+  // since that's the only chance to score it. When the cell IS reachable by
+  // the 5-turn chain (5 > value), the 5-turn will claim it anyway — so
+  // catching now just forfeits the chain continuation we could have had.
+  for (let i = 0; i < state.cells.length; i++) {
+    const cell = state.cells[i];
+    if (cell.state !== "revealed" || cell.scored) continue;
+    const cmp = compareHandVsRevealed(hand, cell.value);
+    if (cmp !== "score") continue;
+    if (hand === "5" && !isSafeFor5Turn(state, i, null, pFive)) continue;
+    const basePts = pointsFor(cell.value);
+    // Determine if the 5-turn could claim this cell on its own chain (only if
+    // this hand isn't already 5, the 5-turn is still ahead, the cell is safe
+    // for that turn, and the cell's value is catchable by a 5 hand).
+    const reachableByFive =
+      hand !== "5" &&
+      fiveAhead(state) &&
+      cell.value !== "K" &&
+      isSafeFor5Turn(state, i, null, pFive);
+    const score = reachableByFive ? 0 : basePts;
+    if (score > bestScore) {
+      bestScore = score;
+      bestCell = i;
+      bestDetail = { kind: "catch", value: cell.value, points: basePts, reachableByFive };
+    }
+  }
+
+  if (bestCell == null) return null;
 
   return {
     cellIdx: bestCell,

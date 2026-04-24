@@ -60,7 +60,15 @@ export function updateBoard(boardEl, state, suggestion) {
       el.dataset.value = cell.value;
       el.textContent = cell.value;
       if (cell.flashed) el.classList.add("flashed");
-      if (!cell.scored) el.classList.add("unscored");
+      if (!cell.scored) {
+        el.classList.add("unscored");
+        // During hand=5, unscored cells with a 5 neighbor can't be claimed —
+        // clicking would trigger the catch mechanic and score 0. Flag them so
+        // the user can see at a glance that the click is blocked.
+        if (currentCard(state) === "5" && !isSafeFor5Turn(state, i, null, pFive)) {
+          el.classList.add("unscored-locked");
+        }
+      }
       continue;
     }
 
