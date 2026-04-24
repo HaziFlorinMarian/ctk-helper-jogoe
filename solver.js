@@ -193,7 +193,14 @@ function scoreCell(state, cellIdx, hand, pFive, distribution) {
         remaining.K * 100) /
       totalRemaining
     : 0;
-  const chainBonus = chainP * avgPts * 0.5;
+  // Chain expectation: when the current flip chains (hand > revealed), the
+  // player gets to flip again. The expected total from continuation is
+  // ~chainP/(1-chainP) * ev of the typical next flip — we approximate that
+  // "typical next ev" with the remaining-card average. A coefficient of 1.0 is
+  // still conservative vs. a full geometric sum, but high enough that chain-
+  // heavy flips (e.g. hand=4 on a safe unsafe-for-5 cell) correctly beat a
+  // same-value catch that ends the turn.
+  const chainBonus = chainP * avgPts;
 
   // A cell will almost certainly be captured during the 5-turn if it's either
   // already safe-for-5 (no catch risk) or a deduced 5 (player can flip it once
@@ -321,11 +328,15 @@ export function suggestMove(state) {
   }
 
   // Same-value catches: revealed-unscored cells whose value equals the current
-  // hand card. These guarantee points but end the turn. They're particularly
-  // valuable when the cell is UNREACHABLE during the 5-turn (adjacent to a 5),
-  // since that's the only chance to score it. When the cell IS reachable by
-  // the 5-turn chain (5 > value), the 5-turn will claim it anyway — so
-  // catching now just forfeits the chain continuation we could have had.
+  // hand card. They guarantee points but end the turn. Only worthwhile when no
+  // HIGHER hand card can later chain-catch the same cell (since a chain catch
+  // keeps the turn alive while banking the same points).
+  //   hand=2 catching a 2: skip — hand=3 chain-catches it freely.
+  //   hand=3 catching a 3: skip — hand=4 chain-catches it freely.
+  //   hand=4 catching a 4: only if the cell is UNSAFE for the 5-turn
+  //                         (hand=5 wouldn't be able to chain-catch safely).
+  //   hand=5 catching a 5: yes, if the cell is safe-for-5 (otherwise caught).
+  //   hand=K catching a K: always — it's the game's endpoint.
   for (let i = 0; i < state.cells.length; i++) {
     const cell = state.cells[i];
     if (cell.state !== "revealed" || cell.scored) continue;
@@ -333,19 +344,17 @@ export function suggestMove(state) {
     if (cmp !== "score") continue;
     if (hand === "5" && !isSafeFor5Turn(state, i, null, pFive)) continue;
     const basePts = pointsFor(cell.value);
-    // Determine if the 5-turn could claim this cell on its own chain (only if
-    // this hand isn't already 5, the 5-turn is still ahead, the cell is safe
-    // for that turn, and the cell's value is catchable by a 5 hand).
-    const reachableByFive =
-      hand !== "5" &&
-      fiveAhead(state) &&
-      cell.value !== "K" &&
-      isSafeFor5Turn(state, i, null, pFive);
-    const score = reachableByFive ? 0 : basePts;
+    let futureChainAvailable = false;
+    if (hand === "2" || hand === "3") {
+      futureChainAvailable = true;
+    } else if (hand === "4" && isSafeFor5Turn(state, i, null, pFive)) {
+      futureChainAvailable = true;
+    }
+    const score = futureChainAvailable ? 0 : basePts;
     if (score > bestScore) {
       bestScore = score;
       bestCell = i;
-      bestDetail = { kind: "catch", value: cell.value, points: basePts, reachableByFive };
+      bestDetail = { kind: "catch", value: cell.value, points: basePts, futureChainAvailable };
     }
   }
 
