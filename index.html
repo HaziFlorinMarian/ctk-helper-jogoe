@@ -10,65 +10,74 @@
   <header>
     <h1>Catch the king helper <span class="subtle">für gekkox3 uwu owo &lt;3</span></h1>
     <div class="header-meta">
+      <div class="lang-switcher" style="display:none;" role="group" aria-label="Language">
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="de">DE</button>
+      </div>
       <span class="discord">discord: @jogoe</span>
-      <span class="version">v0.2</span>
+      <span class="version">v0.3</span>
     </div>
   </header>
 
   <main>
     <aside class="stats-panel">
       <div class="info-block">
-        <div class="label">Solver's chest rate</div>
+        <div class="label" data-i18n="solverChestRate">Solver's chest rate</div>
         <ul class="chest-list">
           <li class="chest-row chest-gold">
-            <span class="chest-name">Gold</span>
+            <span class="chest-name" data-i18n="gold">Gold</span>
             <span class="chest-target">&ge;550</span>
             <span class="chest-pct">40.6%</span>
           </li>
           <li class="chest-row chest-silver">
-            <span class="chest-name">Silver</span>
+            <span class="chest-name" data-i18n="silver">Silver</span>
             <span class="chest-target">400&ndash;549</span>
             <span class="chest-pct">47.7%</span>
           </li>
           <li class="chest-row chest-bronze">
-            <span class="chest-name">Bronze</span>
+            <span class="chest-name" data-i18n="bronze">Bronze</span>
             <span class="chest-target">100&ndash;399</span>
             <span class="chest-pct">11.7%</span>
           </li>
         </ul>
-        <div class="chest-note">across 100,000 rounds</div>
+        <div class="chest-note" data-i18n="acrossRounds">across 100,000 rounds</div>
       </div>
 
       <div class="info-block">
-        <div class="label">Session</div>
+        <div class="label" data-i18n="session">Session</div>
         <ul class="session-list">
           <li class="session-row">
-            <span class="session-name">Games</span>
+            <span class="session-name" data-i18n="games">Games</span>
             <span><span id="sessionGames">0</span></span>
           </li>
           <li class="session-row">
-            <span class="session-name chest-gold">Gold</span>
+            <span class="session-name chest-gold" data-i18n="gold">Gold</span>
             <span><span id="sessionGold">0</span>&nbsp;<span id="sessionPctGold" class="session-pct"></span></span>
           </li>
           <li class="session-row">
-            <span class="session-name chest-silver">Silver</span>
+            <span class="session-name chest-silver" data-i18n="silver">Silver</span>
             <span><span id="sessionSilver">0</span>&nbsp;<span id="sessionPctSilver" class="session-pct"></span></span>
           </li>
           <li class="session-row">
-            <span class="session-name chest-bronze">Bronze</span>
+            <span class="session-name chest-bronze" data-i18n="bronze">Bronze</span>
             <span><span id="sessionBronze">0</span>&nbsp;<span id="sessionPctBronze" class="session-pct"></span></span>
           </li>
         </ul>
-        <button id="sessionResetBtn" class="action-btn session-reset" type="button">Reset</button>
+        <button id="sessionResetBtn" class="action-btn session-reset" type="button" data-i18n="reset">Reset</button>
       </div>
+      <div class="promo-text">
+      Bored? Waiting for your sets to farm? Check out the <a href="https://dominikloefflerniteo.github.io/metin_upgradesim/" target="_blank">Metin2 Upgrade Simulator</a>.
+    </div>
     </aside>
+
+    
 
     <section class="board-panel">
       <div class="disclaimer">
         <strong>Work in progress.</strong> The suggestions get noticeably less
         reliable toward the end of the game, especially once only a few cells
         remain and the solver has to weigh multiple overlapping constraints.
-        Trust your own read in the late game.
+        Trust your own read in the late game. When blindly following the suggestions, see the chest rates on the left table. 
       </div>
 
       <div id="board" class="board" aria-label="5x5 game board"></div>

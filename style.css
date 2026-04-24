@@ -291,6 +291,22 @@ main {
 }
 .disclaimer strong { color: var(--warn); }
 
+.promo-text {
+  margin: 8px 0 16px 0;
+  font-size: 12px;
+  color: var(--fg-dim);
+  text-align: center;
+}
+
+.promo-text a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.promo-text a:hover {
+  text-decoration: underline;
+}
+
 .help {
   background: var(--bg-2);
   border: 1px solid var(--border);
