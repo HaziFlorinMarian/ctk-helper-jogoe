@@ -10,7 +10,17 @@ import {
   fiveProbabilities,
   hiddenCells,
   isSafeFor5Turn,
+  isTrivialSweep,
 } from "./game.js";
+
+const MONEY_FACE_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" class="money-icon">
+  <circle cx="60" cy="60" r="52" fill="#f2c94c" stroke="#1a1a1a" stroke-width="4"/>
+  <text x="36" y="70" font-size="36" font-weight="900" text-anchor="middle" fill="#1b9b4b" font-family="system-ui">$</text>
+  <text x="84" y="70" font-size="36" font-weight="900" text-anchor="middle" fill="#1b9b4b" font-family="system-ui">$</text>
+  <path d="M 32 82 Q 60 112 88 82 Z" fill="#1a1a1a"/>
+  <ellipse cx="60" cy="98" rx="16" ry="8" fill="#ff5e7a"/>
+</svg>`;
 
 // event.code is layout-independent and unaffected by Shift, so Shift+1 still
 // reports "Digit1". event.key flips to "!" / "@" / etc. under Shift and varies
@@ -47,6 +57,10 @@ export function updateBoard(boardEl, state, suggestion) {
   const pFive = fiveProbabilities(state);
   const constrainedCells = new Set();
   for (const cons of constraints) for (const c of cons) constrainedCells.add(c);
+  // Free-cash easter egg: when every remaining hidden cell is either safe-for-5
+  // or a deduced 5, the player can just sweep. Stamp each green cell with a
+  // tiny money-eyes face.
+  const freeCashMode = isTrivialSweep(state, pFive);
 
   for (let i = 0; i < CELL_COUNT; i++) {
     const el = boardEl.children[i];
@@ -96,6 +110,14 @@ export function updateBoard(boardEl, state, suggestion) {
 
     // Independent visual: safe to click with a 5-card (no adjacent face-down 5).
     if (safeToFlip) el.classList.add("safe-flip");
+
+    // Drop the free-cash face on every safe green during sweep mode.
+    if (freeCashMode && safeToFlip && !mustBeFive) {
+      const face = document.createElement("div");
+      face.className = "money-icon-wrap";
+      face.innerHTML = MONEY_FACE_SVG;
+      el.appendChild(face);
+    }
 
     if (p > 0 && !mustBeFive) {
       const probLabel = document.createElement("span");

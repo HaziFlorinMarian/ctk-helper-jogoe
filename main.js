@@ -1,4 +1,4 @@
-import { createState, recordReveal, catchCell, undo, isGameOver } from "./game.js";
+import { createState, recordReveal, catchCell, undo, isGameOver, isTrivialSweep } from "./game.js";
 import { suggestMove } from "./solver.js";
 import {
   renderBoard,

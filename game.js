@@ -147,6 +147,24 @@ export function fiveCandidates(state) {
   return hiddenCells(state).filter((i) => !mustNotBe5.has(i));
 }
 
+// Endgame detector: every remaining hidden cell is either safe-for-5 or a
+// deduced 5. In this state the player can chain-catch all greens and end on
+// the 5 without any risk — effectively a free sweep.
+export function isTrivialSweep(state, pFive) {
+  if (!pFive) pFive = fiveProbabilities(state);
+  let sawHidden = false;
+  for (let i = 0; i < CELL_COUNT; i++) {
+    const cell = state.cells[i];
+    if (cell.state !== "hidden") continue;
+    sawHidden = true;
+    const p5 = pFive.get(i) ?? 0;
+    const mustBe5 = p5 >= 0.999;
+    if (mustBe5) continue;
+    if (!isSafeFor5Turn(state, i, null, pFive)) return false;
+  }
+  return sawHidden;
+}
+
 // True iff flipping `cellIdx` with a 5 in hand carries no catch risk.
 // In-game behavior: ANY adjacent 5 catches the 5-card — revealed 5s too, not
 // just face-down ones. So a neighbor disqualifies the flip if it's a revealed
