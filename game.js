@@ -147,20 +147,36 @@ export function fiveCandidates(state) {
   return hiddenCells(state).filter((i) => !mustNotBe5.has(i));
 }
 
-// Endgame detector: every remaining hidden cell is either safe-for-5 or a
-// deduced 5. In this state the player can chain-catch all greens and end on
-// the 5 without any risk — effectively a free sweep.
+// Endgame detector: every remaining hidden cell has a fully determined
+// 5-status (P(5)=0 or 1) AND the King's location is known (already revealed
+// or deduced to P(K)=1). Without the K pinned down we're still gambling the
+// K-turn, which is the opposite of "free cash" — so suppress the easter egg.
+// The per-cell money icon is also gated on safe-for-flip so adjacent-to-5
+// cells don't get a misleading mark.
 export function isTrivialSweep(state, pFive) {
   if (!pFive) pFive = fiveProbabilities(state);
+  const kRevealed = state.remaining.K === 0;
+  let kDeduced = false;
+  if (!kRevealed) {
+    const dist = cellValueDistribution(state);
+    for (let i = 0; i < CELL_COUNT; i++) {
+      if (state.cells[i].state !== "hidden") continue;
+      if ((dist.get(i)?.K ?? 0) >= 0.999) {
+        kDeduced = true;
+        break;
+      }
+    }
+  }
+  if (!kRevealed && !kDeduced) return false;
+
   let sawHidden = false;
   for (let i = 0; i < CELL_COUNT; i++) {
     const cell = state.cells[i];
     if (cell.state !== "hidden") continue;
     sawHidden = true;
     const p5 = pFive.get(i) ?? 0;
-    const mustBe5 = p5 >= 0.999;
-    if (mustBe5) continue;
-    if (!isSafeFor5Turn(state, i, null, pFive)) return false;
+    if (p5 >= 0.999 || p5 < 0.001) continue;
+    return false;
   }
   return sawHidden;
 }

@@ -26,8 +26,9 @@ const INFO_WEIGHT = 0.9;    // per hidden 8-neighbor; rewards info-rich flips
 const CENTER_TIEBREAK = 0.005; // tiny bias toward grid center to break residual ties
 // Revealing the King early turns the K-turn into a guaranteed +100 click
 // instead of a probability-weighted guess. Weight P(K|cell) to reflect that
-// benefit — scaled so a green cell's ~10% P(K) nudges it over a red gamble.
-const K_HUNT_WEIGHT = 70;
+// benefit — scaled high enough that K-hunting on a safe green can beat a
+// same-value catch once meaningful 4s have already been scored.
+const K_HUNT_WEIGHT = 120;
 const FIVE_CARD_INDEX = HAND_SEQUENCE.indexOf("5");
 
 // "Informative" neighbors — neighbors whose 5-status the flash signal can
