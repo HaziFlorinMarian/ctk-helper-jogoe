@@ -24,6 +24,10 @@ import {
 const CATCH_PENALTY = 500; // weight for getting caught by a 5 on the 5-turn
 const INFO_WEIGHT = 0.9;    // per hidden 8-neighbor; rewards info-rich flips
 const CENTER_TIEBREAK = 0.005; // tiny bias toward grid center to break residual ties
+// Revealing the King early turns the K-turn into a guaranteed +100 click
+// instead of a probability-weighted guess. Weight P(K|cell) to reflect that
+// benefit — scaled so a green cell's ~10% P(K) nudges it over a red gamble.
+const K_HUNT_WEIGHT = 70;
 const FIVE_CARD_INDEX = HAND_SEQUENCE.indexOf("5");
 
 // "Informative" neighbors — neighbors whose 5-status the flash signal can
@@ -170,6 +174,12 @@ function scoreCell(state, cellIdx, hand, pFive, distribution) {
   // Note: no penalty for revealing K early — the K-turn can still click the
   // K-card on a face-up K to score 100.
   const kPenalty = 0;
+  // Bonus for flipping cells likely to BE the King. When hand is not K, the
+  // reveal converts the K-turn from a probability-weighted guess into a
+  // guaranteed +100. Green cells (safe-for-5, P(5)=0) typically have higher
+  // P(K) than red candidates, so this nudges the solver toward K-hunting on
+  // low-risk squares when expected points are close.
+  const kHuntBonus = hand !== "K" ? pK * K_HUNT_WEIGHT : 0;
 
   const remaining = state.remaining;
   const totalRemaining =
@@ -199,12 +209,14 @@ function scoreCell(state, cellIdx, hand, pFive, distribution) {
     const evLater = p5 >= 0.999 ? 50 : expectedPointsIfFiveTurn(dist);
     // Net value of flipping now vs. letting the 5-turn handle it. Bingo and
     // chain roughly cancel because both turns get them. Info is lost if we
-    // wait, so it stays on the "now" side.
-    score = ev - evLater + infoBonus + centerBias - kPenalty;
-    detail = { ev, evLater, infoBonus, kPenalty, reserved: true };
+    // wait, so it stays on the "now" side. K-hunt bonus applies equally: the
+    // 5-turn might not reach this cell before the K-turn begins, so revealing
+    // K now is still a net gain.
+    score = ev - evLater + infoBonus + centerBias - kPenalty + kHuntBonus;
+    detail = { ev, evLater, infoBonus, kPenalty, kHuntBonus, reserved: true };
   } else {
-    score = ev + chainBonus + bingoBonus + infoBonus + centerBias - kPenalty;
-    detail = { ev, chainP, chainBonus, bingoBonus, infoBonus, kPenalty };
+    score = ev + chainBonus + bingoBonus + infoBonus + centerBias - kPenalty + kHuntBonus;
+    detail = { ev, chainP, chainBonus, bingoBonus, infoBonus, kPenalty, kHuntBonus };
     if (hand === "5") {
       const pCatch = probAnyNeighborIsFive(state, cellIdx, pFive);
       score -= pCatch * CATCH_PENALTY;
@@ -235,6 +247,9 @@ function describeReason(state, hand, cellIdx, detail) {
     if (hand === "5" && detail.pCatch != null) {
       parts.push(`catch risk ${(detail.pCatch * 100).toFixed(0)}%`);
     }
+  }
+  if (detail.kHuntBonus && detail.kHuntBonus > 0.5) {
+    parts.push(`K-hunt +${detail.kHuntBonus.toFixed(1)}`);
   }
   return parts.join(", ");
 }

@@ -199,6 +199,18 @@ main {
   letter-spacing: 0;
 }
 
+.disclaimer {
+  background: rgba(242, 153, 74, 0.08);
+  border: 1px solid rgba(242, 153, 74, 0.3);
+  border-left: 3px solid var(--warn);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--fg-dim);
+  line-height: 1.5;
+}
+.disclaimer strong { color: var(--warn); }
+
 .help {
   background: var(--bg-2);
   border: 1px solid var(--border);
