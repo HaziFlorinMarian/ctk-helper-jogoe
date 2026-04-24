@@ -20,6 +20,7 @@ import {
   deriveConstraints,
   isSafeFor5Turn,
 } from "./game.js";
+import { t } from "./i18n.js";
 
 const SCORE_TARGET = 550;
 const FIVE_CARD_INDEX = HAND_SEQUENCE.indexOf("5");
@@ -259,28 +260,27 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, w) {
 
 function describeReason(state, hand, cellIdx, detail) {
   if (detail.kind === "catch") {
-    return `Catch the revealed ${detail.value} for +${detail.points} (ends turn)`;
+    return t("catchSameValueReason", { value: detail.value, points: detail.points });
   }
   if (hand === "K") {
-    const bingoPart = detail.bingoBonus ? ` (+bingo ${detail.bingoBonus})` : "";
-    if (detail.pK >= 0.999) return `King is here — catch for +100${bingoPart}`;
-    return `P(King here) = ${(detail.pK * 100).toFixed(1)}%${bingoPart}`;
+    if (detail.pK >= 0.999) return t("kingHereReason", { bingoBonus: detail.bingoBonus });
+    return t("pKingReason", { pct: (detail.pK * 100).toFixed(1), bingoBonus: detail.bingoBonus });
   }
   const parts = [];
   if (detail.reserved) {
-    parts.push(`reserved for 5-turn (would lose ${(detail.evLater - detail.ev).toFixed(1)} pts)`);
-    if (detail.infoBonus) parts.push(`info +${detail.infoBonus.toFixed(1)}`);
+    parts.push(t("reservedReason", { lost: (detail.evLater - detail.ev).toFixed(1) }));
+    if (detail.infoBonus) parts.push(t("infoReason", { bonus: detail.infoBonus.toFixed(1) }));
   } else {
-    parts.push(`E[points] ≈ ${detail.ev.toFixed(1)}`);
-    if (detail.chainP > 0) parts.push(`chain ${(detail.chainP * 100).toFixed(0)}%`);
-    if (detail.infoBonus) parts.push(`info +${detail.infoBonus.toFixed(1)}`);
-    if (detail.bingoBonus) parts.push(`+${detail.bingoBonus} bingo`);
+    parts.push(t("evReason", { ev: detail.ev.toFixed(1) }));
+    if (detail.chainP > 0) parts.push(t("chainReason", { pct: (detail.chainP * 100).toFixed(0) }));
+    if (detail.infoBonus) parts.push(t("infoReason", { bonus: detail.infoBonus.toFixed(1) }));
+    if (detail.bingoBonus) parts.push(t("bingoReason", { bonus: detail.bingoBonus }));
     if (hand === "5" && detail.pCatch != null) {
-      parts.push(`catch risk ${(detail.pCatch * 100).toFixed(0)}%`);
+      parts.push(t("catchRiskReason", { pct: (detail.pCatch * 100).toFixed(0) }));
     }
   }
   if (detail.kHuntBonus && detail.kHuntBonus > 0.5) {
-    parts.push(`K-hunt +${detail.kHuntBonus.toFixed(1)}`);
+    parts.push(t("kHuntReason", { bonus: detail.kHuntBonus.toFixed(1) }));
   }
   return parts.join(", ");
 }
@@ -299,7 +299,7 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS) {
         return {
           cellIdx: i,
           score: 100,
-          reason: "Click your K card on this King cell for +100",
+          reason: t("clickKKingReason"),
         };
       }
     }
@@ -331,7 +331,7 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS) {
     return {
       cellIdx: bestChainCatch.cellIdx,
       score: pts,
-      reason: `Catch the revealed ${bestChainCatch.value} for +${pts} (chain)`,
+      reason: t("catchChainReason", { value: bestChainCatch.value, points: pts }),
     };
   }
 

@@ -13,6 +13,7 @@ import {
   isTrivialSweep,
   maxPossibleRemaining,
 } from "./game.js";
+import { t } from "./i18n.js";
 
 const MONEY_FACE_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" class="money-icon">
@@ -154,7 +155,7 @@ export function updateSidebar(els, state, suggestion) {
   if (els.scoreCeiling) {
     const maxRem = maxPossibleRemaining(state);
     const ceiling = state.score + maxRem;
-    els.scoreCeiling.textContent = `ceiling ${ceiling} (+${maxRem} left)`;
+    els.scoreCeiling.textContent = t("ceilingText", { ceiling, left: maxRem });
     els.scoreCeiling.classList.remove("unreachable", "within-reach");
     if (ceiling < 550) els.scoreCeiling.classList.add("unreachable");
     else if (state.score >= 550) els.scoreCeiling.classList.add("within-reach");
@@ -169,24 +170,24 @@ export function updateSidebar(els, state, suggestion) {
 
   if (isGameOver(state)) {
     els.suggestionNote.textContent = state.score >= 550
-      ? `Game over. Final score ${state.score}. Target reached!`
-      : `Game over. Final score ${state.score}.`;
+      ? t("gameOverGold", { score: state.score })
+      : t("gameOverOther", { score: state.score });
   } else if (!suggestion || suggestion.cellIdx == null) {
-    els.suggestionNote.textContent = "Nothing to suggest.";
+    els.suggestionNote.textContent = t("nothingToSuggest");
   } else {
     const r = indexToLabel(suggestion.cellIdx);
-    els.suggestionNote.innerHTML = `Try <strong>${r}</strong> &mdash; ${suggestion.reason}`;
+    els.suggestionNote.innerHTML = t("suggestionTryHtml", { cell: r, reason: suggestion.reason });
   }
 }
 
 function hintForTurn(state, hand) {
-  if (!hand) return "Deck exhausted.";
+  if (!hand) return t("deckExhausted");
   if (hand === "K") {
-    if (state.remaining.K === 0) return "Click your K card on the revealed King to score 100.";
-    return "Catch the King in exactly one flip.";
+    if (state.remaining.K === 0) return t("hintKingClick");
+    return t("hintKingFlip");
   }
-  if (hand === "5") return "Avoid cells with 5-neighbors (would catch you).";
-  return "Lowest remaining card is played automatically.";
+  if (hand === "5") return t("hintFive");
+  return t("hintGeneric");
 }
 
 function indexToLabel(idx) {

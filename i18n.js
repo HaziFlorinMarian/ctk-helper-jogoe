@@ -35,6 +35,11 @@ const STRINGS = {
     remainingOnBoard: "Remaining on board",
     suggestion: "Suggestion",
     undo: "Undo",
+    goldChance: "Gold chance (this game)",
+    goldChanceComputing: "computing…",
+    goldChanceNote: ({ samples }) => `${samples} heuristic rollouts`,
+    goldChanceFinal: ({ score }) => `final score ${score}`,
+    valueExhausted: ({ value, total }) => `Already revealed all ${total} ${value}s — can't add more.`,
     // ----- footer -----
     footerText: "Clean-room helper for Metin2 · Schnapp den König",
     // ----- ui.js dynamic -----
@@ -95,6 +100,11 @@ const STRINGS = {
     remainingOnBoard: "Verbleibend auf dem Feld",
     suggestion: "Vorschlag",
     undo: "Rückgängig",
+    goldChance: "Gold-Chance (diese Runde)",
+    goldChanceComputing: "berechne…",
+    goldChanceNote: ({ samples }) => `${samples} Heuristik-Rollouts`,
+    goldChanceFinal: ({ score }) => `Endstand ${score}`,
+    valueExhausted: ({ value, total }) => `Bereits alle ${total} ${value}er aufgedeckt — keine weiteren möglich.`,
     // ----- Fußzeile -----
     footerText: "Clean-Room-Helfer für Metin2 · Schnapp den König",
     // ----- ui.js dynamisch -----

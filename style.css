@@ -43,7 +43,32 @@ header {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  gap: 4px;
+}
+
+.lang-switcher {
+  display: inline-flex;
   gap: 2px;
+  margin-bottom: 2px;
+}
+.lang-btn {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--fg-dim);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+.lang-btn:hover { background: var(--bg-2); color: var(--fg); border-color: var(--fg-dim); }
+.lang-btn.active {
+  background: var(--accent);
+  color: #1a1a1a;
+  border-color: var(--accent);
 }
 
 .discord {
@@ -382,6 +407,45 @@ kbd {
 }
 .score-ceiling.unreachable { color: var(--danger); }
 .score-ceiling.within-reach { color: var(--safe); }
+
+.game-gold-pct {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+.game-gold-pct.cold  { color: var(--danger); }
+.game-gold-pct.warm  { color: var(--warn); }
+.game-gold-pct.hot   { color: var(--safe); }
+.game-gold-note {
+  font-size: 11px;
+  color: var(--fg-dim);
+  margin-top: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-2);
+  border: 1px solid var(--warn);
+  border-left: 3px solid var(--warn);
+  color: var(--fg);
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+  z-index: 1000;
+  max-width: 90vw;
+}
+.toast.toast-show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(2px);
+}
 
 .remaining {
   list-style: none;

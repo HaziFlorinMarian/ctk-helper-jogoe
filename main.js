@@ -1,6 +1,16 @@
-import { createState, recordReveal, catchCell, undo, isGameOver, isTrivialSweep } from "./game.js";
+import {
+  createState,
+  recordReveal,
+  catchCell,
+  undo,
+  isGameOver,
+  isTrivialSweep,
+  NEIGHBORS,
+  BOARD_COUNTS,
+  fiveProbabilities,
+} from "./game.js";
 import { suggestMove as suggestMoveHeuristic } from "./solver.js";
-import { suggestMovePIMC, CHEST_THRESHOLDS } from "./simulate.js";
+import { suggestMovePIMC, CHEST_THRESHOLDS, computeChestProbabilities } from "./simulate.js";
 import {
   renderBoard,
   updateBoard,
@@ -9,6 +19,7 @@ import {
   bindKeyboard,
   bindClick,
 } from "./ui.js";
+import { applyToDOM, getLang, setLang, onLangChange, t } from "./i18n.js";
 
 const boardEl = document.getElementById("board");
 const els = {
@@ -30,6 +41,9 @@ const els = {
   sessionPctSilver: document.getElementById("sessionPctSilver"),
   sessionPctBronze: document.getElementById("sessionPctBronze"),
   sessionResetBtn: document.getElementById("sessionResetBtn"),
+  gameGoldPct: document.getElementById("gameGoldPct"),
+  gameGoldNote: document.getElementById("gameGoldNote"),
+  toast: document.getElementById("toast"),
 };
 
 let state = createState();
@@ -88,6 +102,43 @@ function trackGameCompletion() {
   lastGameOver = now;
 }
 
+// ---------- toast ----------
+let toastTimer = 0;
+function showToast(message) {
+  if (!els.toast) return;
+  els.toast.textContent = message;
+  els.toast.classList.add("toast-show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    els.toast.classList.remove("toast-show");
+  }, 2400);
+}
+
+// ---------- per-game gold-chance card ----------
+// Async so the rest of the UI repaints first; a monotonic job id cancels stale
+// computations when the user keeps acting quickly.
+let goldJob = 0;
+function queueGoldChanceUpdate() {
+  const jobId = ++goldJob;
+  els.gameGoldPct.textContent = "…";
+  els.gameGoldPct.classList.remove("cold", "warm", "hot");
+  els.gameGoldNote.textContent = t("goldChanceComputing");
+  setTimeout(() => {
+    if (jobId !== goldJob) return;
+    const r = computeChestProbabilities(state, { N: 40 });
+    if (jobId !== goldJob) return;
+    const pctText = Math.round(r.pGold * 100) + "%";
+    els.gameGoldPct.textContent = pctText;
+    els.gameGoldPct.classList.toggle("hot",  r.pGold >= 0.6);
+    els.gameGoldPct.classList.toggle("warm", r.pGold >= 0.3 && r.pGold < 0.6);
+    els.gameGoldPct.classList.toggle("cold", r.pGold < 0.3);
+    els.gameGoldNote.textContent = r.gameOver
+      ? t("goldChanceFinal", { score: r.eScore })
+      : t("goldChanceNote", { samples: r.samples });
+  }, 0);
+}
+
+// ---------- solver / refresh ----------
 function computeSuggestion() {
   if (isGameOver(state)) return null;
   return solverMode === "pimc" ? suggestMovePIMC(state) : suggestMoveHeuristic(state);
@@ -100,10 +151,12 @@ function refresh() {
   els.undoBtn.disabled = state.history.length === 0;
   els.solverMode.textContent = solverMode === "pimc" ? "PIMC" : "Heuristic";
   trackGameCompletion();
+  queueGoldChanceUpdate();
 }
 
 renderBoard(boardEl);
 renderSessionStats();
+applyToDOM();
 
 const hover = bindHover(boardEl, () => {});
 
@@ -118,13 +171,32 @@ bindClick(boardEl, {
   },
 });
 
+// Once a 5 is pinned (revealed or deduced P=1), revealing an adjacent cell
+// MUST flash by definition — there's no longer a no-flash version of the
+// truth. Auto-promote flashed=true on those reveals so the user doesn't
+// have to press Shift on every later reveal.
+function effectiveFlashed(idx, flashed) {
+  if (flashed) return true;
+  const pFive = fiveProbabilities(state);
+  for (const n of NEIGHBORS[idx]) {
+    const nc = state.cells[n];
+    if (nc.state === "revealed" && nc.value === "5") return true;
+    if (nc.state === "hidden" && (pFive.get(n) ?? 0) >= 0.999) return true;
+  }
+  return false;
+}
+
 bindKeyboard({
   onReveal(value, flashed) {
     if (isGameOver(state)) return;
     const idx = hover.getHovered();
     if (idx == null) return;
     if (state.cells[idx].state !== "hidden") return;
-    recordReveal(state, idx, value, flashed);
+    if ((state.remaining[value] ?? 0) <= 0) {
+      showToast(t("valueExhausted", { value, total: BOARD_COUNTS[value] }));
+      return;
+    }
+    recordReveal(state, idx, value, effectiveFlashed(idx, flashed));
     refresh();
   },
   onUndo() {
@@ -158,5 +230,23 @@ els.sessionResetBtn.addEventListener("click", () => {
   saveSessionStats({ games: 0, gold: 0, silver: 0, bronze: 0 });
   renderSessionStats();
 });
+
+// ---------- language switcher ----------
+const langButtons = document.querySelectorAll(".lang-switcher .lang-btn");
+function syncLangButtons() {
+  const cur = getLang();
+  langButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.lang === cur);
+  });
+}
+langButtons.forEach((btn) => {
+  btn.addEventListener("click", () => setLang(btn.dataset.lang));
+});
+onLangChange(() => {
+  syncLangButtons();
+  renderSessionStats();
+  refresh();
+});
+syncLangButtons();
 
 refresh();
