@@ -11,6 +11,7 @@ import {
   hiddenCells,
   isSafeFor5Turn,
   isTrivialSweep,
+  maxPossibleRemaining,
 } from "./game.js";
 
 const MONEY_FACE_SVG = `
@@ -149,6 +150,15 @@ export function updateSidebar(els, state, suggestion) {
   els.score.textContent = String(state.score);
   if (state.score >= 550) els.score.classList.add("good");
   else els.score.classList.remove("good");
+
+  if (els.scoreCeiling) {
+    const maxRem = maxPossibleRemaining(state);
+    const ceiling = state.score + maxRem;
+    els.scoreCeiling.textContent = `ceiling ${ceiling} (+${maxRem} left)`;
+    els.scoreCeiling.classList.remove("unreachable", "within-reach");
+    if (ceiling < 550) els.scoreCeiling.classList.add("unreachable");
+    else if (state.score >= 550) els.scoreCeiling.classList.add("within-reach");
+  }
 
   els.remaining.innerHTML = "";
   for (const v of VALUES) {

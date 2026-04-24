@@ -147,6 +147,15 @@ export function fiveCandidates(state) {
   return hiddenCells(state).filter((i) => !mustNotBe5.has(i));
 }
 
+// Every subset of hidden cells (of size `remaining.5`) that satisfies every
+// active flash constraint. Exposed for simulation: the PIMC sampler picks a
+// uniform placement from this list then permutes non-5 values over the rest.
+export function enumerate5Placements(state) {
+  const { mustNotBe5, constraints } = deriveConstraints(state);
+  const candidates = hiddenCells(state).filter((i) => !mustNotBe5.has(i));
+  return enumerateFivePlacements(candidates, state.remaining[5], constraints);
+}
+
 // Endgame detector: every remaining hidden cell has a fully determined
 // 5-status (P(5)=0 or 1) AND the King's location is known (already revealed
 // or deduced to P(K)=1). Without the K pinned down we're still gambling the
@@ -366,18 +375,11 @@ export function recordReveal(state, cellIdx, value, flashed) {
   }
   cell.scored = scored;
 
-  // Bingo bonuses: any line that became fully revealed via this flip.
-  const newBingos = [];
-  BINGO_LINES.forEach((line, lineIdx) => {
-    if (state.completedBingos.has(lineIdx)) return;
-    if (!line.includes(cellIdx)) return;
-    const complete = line.every((i) => state.cells[i].state === "revealed");
-    if (complete) {
-      state.completedBingos.add(lineIdx);
-      newBingos.push(lineIdx);
-      gained += 10;
-    }
-  });
+  // Bingo fires only when every cell in a line is revealed AND scored — an
+  // unclaimed reveal (hand too low) shouldn't count. If this event left the
+  // cell unscored, it can't complete anything; otherwise check.
+  const bingoResult = scored ? checkBingoCompletions(state, cellIdx) : { gained: 0, newBingos: [] };
+  gained += bingoResult.gained;
 
   state.score += gained;
   if (turnEnds) state.handIndex += 1;
@@ -386,7 +388,30 @@ export function recordReveal(state, cellIdx, value, flashed) {
   snapshot.turnEnded = turnEnds;
   state.history.push(snapshot);
 
-  return { gained, bingos: newBingos, turnEnded: turnEnds };
+  return { gained, bingos: bingoResult.newBingos, turnEnded: turnEnds };
+}
+
+// Scan the bingo lines that include `cellIdx` and mark any whose cells are ALL
+// revealed-and-scored as complete. Returns the points gained and the newly
+// completed line indices.
+function checkBingoCompletions(state, cellIdx) {
+  let gained = 0;
+  const newBingos = [];
+  for (let lineIdx = 0; lineIdx < BINGO_LINES.length; lineIdx++) {
+    if (state.completedBingos.has(lineIdx)) continue;
+    const line = BINGO_LINES[lineIdx];
+    if (!line.includes(cellIdx)) continue;
+    const complete = line.every((i) => {
+      const c = state.cells[i];
+      return c.state === "revealed" && c.scored;
+    });
+    if (complete) {
+      state.completedBingos.add(lineIdx);
+      newBingos.push(lineIdx);
+      gained += 10;
+    }
+  }
+  return { gained, newBingos };
 }
 
 // Claim points for a revealed-but-unscored cell with the current hand card.
@@ -411,10 +436,14 @@ export function catchCell(state, cellIdx) {
     cellIdx,
     prevScore: state.score,
     prevHandIndex: state.handIndex,
+    prevCompletedBingos: new Set(state.completedBingos),
   };
 
   cell.scored = true;
-  const gained = pointsFor(cell.value);
+  let gained = pointsFor(cell.value);
+  // Catching can complete a bingo if this was the last unscored cell in a line.
+  const bingoResult = checkBingoCompletions(state, cellIdx);
+  gained += bingoResult.gained;
   state.score += gained;
   const turnEnded = cmp === "score";
   if (turnEnded) state.handIndex += 1;
@@ -423,7 +452,7 @@ export function catchCell(state, cellIdx) {
   snapshot.turnEnded = turnEnded;
   state.history.push(snapshot);
 
-  return { gained, turnEnded };
+  return { gained, turnEnded, bingos: bingoResult.newBingos };
 }
 
 export function undo(state) {
@@ -434,6 +463,7 @@ export function undo(state) {
     cell.scored = false;
     state.score = last.prevScore;
     state.handIndex = last.prevHandIndex;
+    if (last.prevCompletedBingos) state.completedBingos = last.prevCompletedBingos;
     return true;
   }
   if (last.kind !== "reveal") return false;
@@ -451,4 +481,31 @@ export function undo(state) {
 
 export function reset() {
   return createState();
+}
+
+// Optimistic upper bound on how many more points the game could still yield
+// from the current state. Counts every unscored revealed cell whose value is
+// catchable by some remaining hand card, every still-face-down card's value
+// (assuming we can reveal and catch it), plus a +10 for each bingo line that
+// hasn't fired yet. Intended as a ceiling, not an expectation — useful for
+// understanding whether the 550 target is even reachable.
+export function maxPossibleRemaining(state) {
+  const remainingHands = HAND_SEQUENCE.slice(state.handIndex);
+  const canCatchValue = (v) =>
+    remainingHands.some((h) => {
+      const cmp = compareHandVsRevealed(h, v);
+      return cmp === "score" || cmp === "chain";
+    });
+
+  let max = 0;
+  for (const cell of state.cells) {
+    if (cell.state === "revealed" && !cell.scored && canCatchValue(cell.value)) {
+      max += pointsFor(cell.value);
+    }
+  }
+  for (const v of VALUES) {
+    if (canCatchValue(v)) max += state.remaining[v] * pointsFor(v);
+  }
+  max += (BINGO_LINES.length - state.completedBingos.size) * 10;
+  return max;
 }

@@ -21,15 +21,36 @@ import {
   isSafeFor5Turn,
 } from "./game.js";
 
-const CATCH_PENALTY = 500; // weight for getting caught by a 5 on the 5-turn
-const INFO_WEIGHT = 0.9;    // per hidden 8-neighbor; rewards info-rich flips
-const CENTER_TIEBREAK = 0.005; // tiny bias toward grid center to break residual ties
-// Revealing the King early turns the K-turn into a guaranteed +100 click
-// instead of a probability-weighted guess. Weight P(K|cell) to reflect that
-// benefit — scaled high enough that K-hunting on a safe green can beat a
-// same-value catch once meaningful 4s have already been scored.
-const K_HUNT_WEIGHT = 120;
+const SCORE_TARGET = 550;
 const FIVE_CARD_INDEX = HAND_SEQUENCE.indexOf("5");
+
+// All tunable weights in one place so offline search (tune.mjs) can sweep
+// them. suggestMove() accepts an optional weights argument and falls back to
+// these defaults, so the in-browser app never notices the refactor.
+//
+// Current values were produced by tune.mjs: n=3000 paired self-play games
+// lifted pGold from 31.6% to 40.1% vs. a hand-tuned starting point.
+// Chain-greed (chainBonusMul) and info-seeking (infoWeight) were the biggest
+// wins — both came in well below the game's optimum.
+export const DEFAULT_WEIGHTS = {
+  catchPenalty: 612,      // hand=5 catch-risk aversion (× P(any 5 adjacent))
+  infoWeight: 2.89,       // scales flash-info contribution per hidden neighbour
+  centerTiebreak: 0.037,  // microscopic bias toward the grid centre
+  chainBonusMul: 1.94,    // multiplier on the chain-continuation expected value
+  kHuntBase: 150,         // K-hunt weight when score already near target
+  kHuntSlope: 2.46,       // extra K-hunt weight per point of gap to 550
+  kHuntMax: 727,          // ceiling so K-hunt can't wholly crowd out EV
+};
+
+// The K-turn's +100 is often the difference between the silver (400) and gold
+// (550) chest. When the current score is far below 550, revealing K early —
+// which converts the K-turn from a probability-weighted guess into a
+// deterministic +100 — is the highest-leverage move available. Scale the
+// K-hunt bonus by the score gap so it automatically goes up when we need it.
+function kHuntWeight(state, w) {
+  const gap = Math.max(0, SCORE_TARGET - state.score);
+  return Math.min(w.kHuntMax, w.kHuntBase + gap * w.kHuntSlope);
+}
 
 // "Informative" neighbors — neighbors whose 5-status the flash signal can
 // still distinguish. The flash is predetermined if any adjacent cell is a
@@ -106,19 +127,21 @@ function probAnyNeighborIsFive(state, cellIdx, pFive) {
   return 1 - pNone;
 }
 
-// How many additional reveals would flipping `cellIdx` contribute toward any
-// not-yet-completed bingo line? Returns the number of lines that would become
-// complete on a single reveal of this cell.
+// How many bingo lines would flipping `cellIdx` (and getting it scored)
+// complete? Bingo now requires every cell in the line to be revealed AND
+// scored, so count only lines where every OTHER cell already satisfies that.
 function bingoLinesCompletedBy(state, cellIdx) {
   let count = 0;
   for (let i = 0; i < BINGO_LINES.length; i++) {
     if (state.completedBingos.has(i)) continue;
     const line = BINGO_LINES[i];
     if (!line.includes(cellIdx)) continue;
-    const otherHidden = line.filter(
-      (c) => c !== cellIdx && state.cells[c].state === "hidden",
-    ).length;
-    if (otherHidden === 0) count += 1;
+    const othersDone = line.every((c) => {
+      if (c === cellIdx) return true;
+      const cell = state.cells[c];
+      return cell.state === "revealed" && cell.scored;
+    });
+    if (othersDone) count += 1;
   }
   return count;
 }
@@ -148,14 +171,14 @@ function probChainContinues(hand, distribution) {
 }
 
 // Score a candidate flip for the current hand.
-function scoreCell(state, cellIdx, hand, pFive, distribution) {
+function scoreCell(state, cellIdx, hand, pFive, distribution, w) {
   const dist = distribution.get(cellIdx);
   const bingoBonus = bingoLinesCompletedBy(state, cellIdx) * 10;
 
   if (hand === "K") {
     // Only value is catching the King.
     const pK = dist.K ?? 0;
-    const centerBias = -centerDistance(cellIdx) * CENTER_TIEBREAK;
+    const centerBias = -centerDistance(cellIdx) * w.centerTiebreak;
     return {
       score: pK * 100 + bingoBonus + centerBias,
       detail: { pK, bingoBonus },
@@ -168,8 +191,8 @@ function scoreCell(state, cellIdx, hand, pFive, distribution) {
   // Base value-info (knowing this cell's own value) + flash-info (resolving
   // neighbor 5-candidacy, conditional on the flash being unknown a priori).
   const flashInfo = informativeNeighborCount(state, cellIdx, pFive);
-  const infoBonus = uncertainty * (1 + flashInfo * INFO_WEIGHT);
-  const centerBias = -centerDistance(cellIdx) * CENTER_TIEBREAK;
+  const infoBonus = uncertainty * (1 + flashInfo * w.infoWeight);
+  const centerBias = -centerDistance(cellIdx) * w.centerTiebreak;
   const pK = dist.K ?? 0;
   const p5 = dist[5] ?? 0;
   // Note: no penalty for revealing K early — the K-turn can still click the
@@ -177,10 +200,9 @@ function scoreCell(state, cellIdx, hand, pFive, distribution) {
   const kPenalty = 0;
   // Bonus for flipping cells likely to BE the King. When hand is not K, the
   // reveal converts the K-turn from a probability-weighted guess into a
-  // guaranteed +100. Green cells (safe-for-5, P(5)=0) typically have higher
-  // P(K) than red candidates, so this nudges the solver toward K-hunting on
-  // low-risk squares when expected points are close.
-  const kHuntBonus = hand !== "K" ? pK * K_HUNT_WEIGHT : 0;
+  // guaranteed +100. Weight scales with distance to the 550 target so it
+  // dominates decisions when we actually need K to reach gold.
+  const kHuntBonus = hand !== "K" ? pK * kHuntWeight(state, w) : 0;
 
   const remaining = state.remaining;
   const totalRemaining =
@@ -197,11 +219,12 @@ function scoreCell(state, cellIdx, hand, pFive, distribution) {
   // Chain expectation: when the current flip chains (hand > revealed), the
   // player gets to flip again. The expected total from continuation is
   // ~chainP/(1-chainP) * ev of the typical next flip — we approximate that
-  // "typical next ev" with the remaining-card average. A coefficient of 1.0 is
-  // still conservative vs. a full geometric sum, but high enough that chain-
-  // heavy flips (e.g. hand=4 on a safe unsafe-for-5 cell) correctly beat a
-  // same-value catch that ends the turn.
-  const chainBonus = chainP * avgPts;
+  // "typical next ev" with the remaining-card average, scaled by
+  // chainBonusMul. A multiplier of 1.0 is still conservative vs. a full
+  // geometric sum, but high enough that chain-heavy flips (e.g. hand=4 on a
+  // safe unsafe-for-5 cell) correctly beat a same-value catch that ends
+  // the turn.
+  const chainBonus = chainP * avgPts * w.chainBonusMul;
 
   // A cell will almost certainly be captured during the 5-turn if it's either
   // already safe-for-5 (no catch risk) or a deduced 5 (player can flip it once
@@ -227,7 +250,7 @@ function scoreCell(state, cellIdx, hand, pFive, distribution) {
     detail = { ev, chainP, chainBonus, bingoBonus, infoBonus, kPenalty, kHuntBonus };
     if (hand === "5") {
       const pCatch = probAnyNeighborIsFive(state, cellIdx, pFive);
-      score -= pCatch * CATCH_PENALTY;
+      score -= pCatch * w.catchPenalty;
       detail.pCatch = pCatch;
     }
   }
@@ -262,7 +285,7 @@ function describeReason(state, hand, cellIdx, detail) {
   return parts.join(", ");
 }
 
-export function suggestMove(state) {
+export function suggestMove(state, weights = DEFAULT_WEIGHTS) {
   const hand = currentCard(state);
   if (!hand) return null;
 
@@ -320,7 +343,7 @@ export function suggestMove(state) {
   let bestScore = -Infinity;
   let bestDetail = null;
   for (const idx of hidden) {
-    const { score, detail } = scoreCell(state, idx, hand, pFive, distribution);
+    const { score, detail } = scoreCell(state, idx, hand, pFive, distribution, weights);
     if (score > bestScore) {
       bestScore = score;
       bestCell = idx;
