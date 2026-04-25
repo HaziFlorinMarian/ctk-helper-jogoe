@@ -277,7 +277,7 @@ main {
 /* Floating "TIPP" pill badge so the suggestion is unmistakable. Sits on the
    top-left corner of the cell, animated with the same pulse rhythm. */
 .cell.suggested::before {
-  content: "TIPP";
+  content: "HINT";
   position: absolute;
   top: -10px;
   left: -8px;
@@ -312,6 +312,7 @@ main {
   0%, 100% { transform: translateY(0)    rotate(-4deg); }
   50%      { transform: translateY(-3px) rotate(-1deg); }
 }
+html[lang="de"] .cell.suggested::before { content: "TIPP"; }
 
 .money-icon-wrap {
   position: absolute;

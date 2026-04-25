@@ -169,6 +169,7 @@ export function setLang(lang) {
   if (typeof localStorage !== "undefined") {
     try { localStorage.setItem(STORAGE_KEY, lang); } catch (e) { /* ignored */ }
   }
+  if (typeof document !== "undefined") document.documentElement.lang = lang;
   applyToDOM();
   for (const fn of listeners) fn(lang);
 }
@@ -186,6 +187,9 @@ export function t(key, params) {
 
 export function applyToDOM(root) {
   if (typeof document === "undefined") return;
+  // Keep <html lang> in sync with the active language so CSS can branch on it
+  // (e.g. localised pseudo-element labels via html[lang="…"]).
+  if (!root) document.documentElement.lang = currentLang;
   const r = root ?? document;
   r.querySelectorAll("[data-i18n]").forEach((el) => {
     el.textContent = t(el.dataset.i18n);
