@@ -46,14 +46,14 @@ function kIndex(world) {
 
 // Play one game end-to-end: the solver sees only observed state, every reveal
 // is resolved from `world` (with flash = any face-down 5 in world neighbours).
-function playOneGame(world) {
+function playOneGame(world, options) {
   const state = createState();
   const kIdx = kIndex(world);
   let kRevealedBeforeKTurn = false;
   // Safety cap: ~25 flips + ~25 catches is the worst case; 200 is plenty.
   let safety = 200;
   while (!isGameOver(state) && safety-- > 0) {
-    const suggestion = suggestMove(state);
+    const suggestion = suggestMove(state, undefined, options);
     if (!suggestion || suggestion.cellIdx == null) break;
     const idx = suggestion.cellIdx;
     const cell = state.cells[idx];
@@ -147,16 +147,21 @@ function printReport(stats) {
 }
 
 function main() {
-  const n = Number(process.argv[2] ?? 500);
+  const args = process.argv.slice(2);
+  const fullOpener = args.includes("--full-opener");
+  const positional = args.filter((a) => !a.startsWith("--"));
+  const n = Number(positional[0] ?? 500);
   if (!Number.isFinite(n) || n <= 0) {
-    console.error("usage: node benchmark.mjs [games]");
+    console.error("usage: node benchmark.mjs [games] [--full-opener]");
     process.exit(1);
   }
-  console.log(`Self-playing ${n} games with the heuristic solver…`);
+  const opts = fullOpener ? { forceFullOpener: true } : undefined;
+  const tag = fullOpener ? " (forced full opener — early-exit disabled)" : "";
+  console.log(`Self-playing ${n} games with the heuristic solver${tag}…`);
   const t0 = Date.now();
   const results = [];
   for (let i = 0; i < n; i++) {
-    results.push(playOneGame(randomBoard()));
+    results.push(playOneGame(randomBoard(), opts));
     if ((i + 1) % 50 === 0) {
       const dt = (Date.now() - t0) / 1000;
       process.stdout.write(`\r  ${i + 1}/${n}  (${dt.toFixed(1)}s)   `);

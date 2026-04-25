@@ -9,8 +9,8 @@ import {
   BOARD_COUNTS,
   fiveProbabilities,
 } from "./game.js";
-import { suggestMove as suggestMoveHeuristic } from "./solver.js";
-import { suggestMovePIMC, CHEST_THRESHOLDS, computeChestProbabilities } from "./simulate.js";
+import { suggestMove } from "./solver.js";
+import { CHEST_THRESHOLDS, computeChestProbabilities } from "./simulate.js";
 import {
   renderBoard,
   updateBoard,
@@ -31,8 +31,6 @@ const els = {
   suggestionNote: document.getElementById("suggestionNote"),
   resetBtn: document.getElementById("resetBtn"),
   undoBtn: document.getElementById("undoBtn"),
-  solverMode: document.getElementById("solverMode"),
-  solverToggleBtn: document.getElementById("solverToggleBtn"),
   sessionGames: document.getElementById("sessionGames"),
   sessionGold: document.getElementById("sessionGold"),
   sessionSilver: document.getElementById("sessionSilver"),
@@ -311,10 +309,6 @@ function triggerGoldRain() {
 }
 
 let state = createState();
-// Heuristic is the active solver. The PIMC toggle is wired but hidden in the
-// UI — strategy fusion in the full-info rollout made its suggestions worse
-// than the heuristic. Keep the code around for future work.
-let solverMode = "heuristic"; // "pimc" | "heuristic"
 let lastGameOver = false;
 
 // Session stats persist across reloads via localStorage so refreshing the
@@ -455,7 +449,7 @@ function queueGoldChanceUpdate() {
 // ---------- solver / refresh ----------
 function computeSuggestion() {
   if (isGameOver(state)) return null;
-  return solverMode === "pimc" ? suggestMovePIMC(state) : suggestMoveHeuristic(state);
+  return suggestMove(state);
 }
 
 function refresh() {
@@ -463,7 +457,6 @@ function refresh() {
   updateBoard(boardEl, state, suggestion);
   updateSidebar(els, state, suggestion);
   els.undoBtn.disabled = state.history.length === 0;
-  els.solverMode.textContent = solverMode === "pimc" ? "PIMC" : "Heuristic";
   trackGameCompletion();
   queueGoldChanceUpdate();
 }
@@ -536,11 +529,6 @@ els.resetBtn.addEventListener("click", () => {
 
 els.undoBtn.addEventListener("click", () => {
   undo(state);
-  refresh();
-});
-
-els.solverToggleBtn.addEventListener("click", () => {
-  solverMode = solverMode === "pimc" ? "heuristic" : "pimc";
   refresh();
 });
 

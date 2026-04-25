@@ -93,6 +93,28 @@ function informativeNeighborCount(state, cellIdx, pFive) {
   return count;
 }
 
+// Has every hidden cell that could still be a 5 already been "seen" by a
+// flash from some revealed neighbour? If yes, the opener has nothing left
+// to learn about 5-locations even if not all of its moves were played —
+// e.g. when constraint propagation pins all candidates to one side of the
+// board after just two reveals. Deduced-certain 5s (P=1) are also covered:
+// their flash status is fully determined.
+function fivesFullyInformed(state) {
+  if (state.remaining[5] === 0) return true;
+  const pFive = fiveProbabilities(state);
+  for (let i = 0; i < state.cells.length; i++) {
+    if (state.cells[i].state !== "hidden") continue;
+    const p = pFive.get(i) ?? 0;
+    if (p <= 0 || p >= 0.999) continue;
+    let seen = false;
+    for (const n of NEIGHBORS[i]) {
+      if (state.cells[n].state === "revealed") { seen = true; break; }
+    }
+    if (!seen) return false;
+  }
+  return true;
+}
+
 function centerDistance(cellIdx) {
   const r = Math.floor(cellIdx / GRID_SIZE);
   const c = cellIdx % GRID_SIZE;
@@ -325,13 +347,20 @@ function describeReason(state, hand, cellIdx, detail) {
   return parts.join(", ");
 }
 
-export function suggestMove(state, weights = DEFAULT_WEIGHTS) {
+export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
   const hand = currentCard(state);
   if (!hand) return null;
 
   // Hardcoded opener — only on hand=1 turns. Skips already-revealed cells so
   // mid-game undo / manual reveals don't cause infinite suggestions.
-  if (hand === "1" && state.handIndex < OPENING_PATTERN.length) {
+  // Early-exit when every hidden cell that could still be a 5 is already
+  // adjacent to a revealed cell: the existing flash signals already cover
+  // all possible 5 locations, so further opener flips can't refine the
+  // 5-map. Hand off to the heuristic, which can pick a more EV-rich flip.
+  // `options.forceFullOpener` is an offline benchmarking knob to disable
+  // that early-exit and measure its contribution.
+  const openerEarlyExit = !options.forceFullOpener && fivesFullyInformed(state);
+  if (hand === "1" && state.handIndex < OPENING_PATTERN.length && !openerEarlyExit) {
     for (const idx of OPENING_PATTERN) {
       if (state.cells[idx].state === "hidden") {
         return {
