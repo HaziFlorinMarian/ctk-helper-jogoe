@@ -21,9 +21,28 @@ import {
   isSafeFor5Turn,
 } from "./game.js";
 import { t } from "./i18n.js";
+import { suggestMoveSearch } from "./search.js";
+
+// Late-game expectimax. Triggers when the state is small enough for the
+// search to terminate within budget — past hand=5 with too many hidden cells
+// branching explodes. Empirically ≤ 6 hidden cells stays under ~50k nodes
+// with useful resolution; expanding to hand=4 was tried but fails because
+// budget-exhausted leaves return state.score (no future estimate), so the
+// search picks worse moves than the heuristic. The fix would be a heuristic
+// leaf evaluator — left for future work.
+const SEARCH_TRIGGER_HAND_INDEX = 10;
+const SEARCH_MAX_HIDDEN = 6;
+const SEARCH_NODE_BUDGET = 50000;
 
 const SCORE_TARGET = 550;
 const FIVE_CARD_INDEX = HAND_SEQUENCE.indexOf("5");
+
+// Hardcoded opening: a dominating-set pattern that covers the whole 5×5 board
+// with 4 reveals (every cell either revealed or a neighbour of a revealed
+// cell). Beats greedy info-flip by ~+1.7pp gold per tune-opening.mjs. The
+// gain comes from a multi-turn property — saving the centre for later — that
+// a one-step heuristic can't see.
+const OPENING_PATTERN = [1, 3, 16, 18];
 
 // All tunable weights in one place so offline search (tune.mjs) can sweep
 // them. suggestMove() accepts an optional weights argument and falls back to
@@ -41,6 +60,7 @@ export const DEFAULT_WEIGHTS = {
   kHuntBase: 150,         // K-hunt weight when score already near target
   kHuntSlope: 2.46,       // extra K-hunt weight per point of gap to 550
   kHuntMax: 727,          // ceiling so K-hunt can't wholly crowd out EV
+  spreadWeight: 0,        // bonus per neighbour not yet adjacent to a reveal
 };
 
 // The K-turn's +100 is often the difference between the silver (400) and gold
@@ -78,6 +98,25 @@ function centerDistance(cellIdx) {
   const c = cellIdx % GRID_SIZE;
   const mid = (GRID_SIZE - 1) / 2;
   return Math.hypot(r - mid, c - mid);
+}
+
+// Count of `cellIdx`'s hidden neighbours that aren't already adjacent to some
+// other revealed cell. Higher number = flipping this cell pulls more "fresh"
+// area into the helper's adjacency view. Encodes a board-coverage prior so
+// the heuristic spreads its reveals instead of clustering them.
+function spreadCount(state, cellIdx) {
+  let count = 0;
+  for (const n of NEIGHBORS[cellIdx]) {
+    const nc = state.cells[n];
+    if (nc.state === "revealed") continue;
+    let alreadyAdjacent = false;
+    for (const nn of NEIGHBORS[n]) {
+      if (nn === cellIdx) continue;
+      if (state.cells[nn].state === "revealed") { alreadyAdjacent = true; break; }
+    }
+    if (!alreadyAdjacent) count += 1;
+  }
+  return count;
 }
 
 // Uncertainty of a cell's value as a ratio in [0, 1]. A must-be-5 or must-be-X
@@ -194,6 +233,7 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, w) {
   const flashInfo = informativeNeighborCount(state, cellIdx, pFive);
   const infoBonus = uncertainty * (1 + flashInfo * w.infoWeight);
   const centerBias = -centerDistance(cellIdx) * w.centerTiebreak;
+  const spreadBonus = w.spreadWeight ? spreadCount(state, cellIdx) * w.spreadWeight : 0;
   const pK = dist.K ?? 0;
   const p5 = dist[5] ?? 0;
   // Note: no penalty for revealing K early — the K-turn can still click the
@@ -244,11 +284,11 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, w) {
     // wait, so it stays on the "now" side. K-hunt bonus applies equally: the
     // 5-turn might not reach this cell before the K-turn begins, so revealing
     // K now is still a net gain.
-    score = ev - evLater + infoBonus + centerBias - kPenalty + kHuntBonus;
-    detail = { ev, evLater, infoBonus, kPenalty, kHuntBonus, reserved: true };
+    score = ev - evLater + infoBonus + spreadBonus + centerBias - kPenalty + kHuntBonus;
+    detail = { ev, evLater, infoBonus, spreadBonus, kPenalty, kHuntBonus, reserved: true };
   } else {
-    score = ev + chainBonus + bingoBonus + infoBonus + centerBias - kPenalty + kHuntBonus;
-    detail = { ev, chainP, chainBonus, bingoBonus, infoBonus, kPenalty, kHuntBonus };
+    score = ev + chainBonus + bingoBonus + infoBonus + spreadBonus + centerBias - kPenalty + kHuntBonus;
+    detail = { ev, chainP, chainBonus, bingoBonus, infoBonus, spreadBonus, kPenalty, kHuntBonus };
     if (hand === "5") {
       const pCatch = probAnyNeighborIsFive(state, cellIdx, pFive);
       score -= pCatch * w.catchPenalty;
@@ -288,6 +328,34 @@ function describeReason(state, hand, cellIdx, detail) {
 export function suggestMove(state, weights = DEFAULT_WEIGHTS) {
   const hand = currentCard(state);
   if (!hand) return null;
+
+  // Hardcoded opener — only on hand=1 turns. Skips already-revealed cells so
+  // mid-game undo / manual reveals don't cause infinite suggestions.
+  if (hand === "1" && state.handIndex < OPENING_PATTERN.length) {
+    for (const idx of OPENING_PATTERN) {
+      if (state.cells[idx].state === "hidden") {
+        return {
+          cellIdx: idx,
+          score: 0,
+          reason: t("openingReason"),
+        };
+      }
+    }
+  }
+
+  // Late game: hand off to expectimax. The search budget bounds branching
+  // so we degrade gracefully on dense states; if it bails out (exhausted)
+  // we fall back to the heuristic for this decision.
+  if (state.handIndex >= SEARCH_TRIGGER_HAND_INDEX) {
+    let hiddenCount = 0;
+    for (let i = 0; i < state.cells.length; i++) {
+      if (state.cells[i].state === "hidden") hiddenCount += 1;
+    }
+    if (hiddenCount <= SEARCH_MAX_HIDDEN) {
+      const r = suggestMoveSearch(state, { maxNodes: SEARCH_NODE_BUDGET });
+      if (r && !r.searchExhausted) return r;
+    }
+  }
 
   // On the K-turn, clicking the K-card on the King (face-down OR already
   // face-up) catches it for +100. If the K is already revealed, point the

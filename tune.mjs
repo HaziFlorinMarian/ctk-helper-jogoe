@@ -103,6 +103,8 @@ function evaluateConfig(weights, boards) {
 // sweep, slightly widened on each side. `centerTiebreak` and `kHuntSlope`
 // showed weak signal (winners span their whole range) so we keep those
 // wide-ish. The intensified search should push into the 40%+ region faster.
+// `spreadWeight` was added with the dominating-set opener; we sweep it from
+// 0 (off) up to a generous ceiling.
 function sampleConfig(rng) {
   return {
     catchPenalty:   400 + rng() * 1200,  // was 50–1500, top-8 spread 510–1498
@@ -112,6 +114,7 @@ function sampleConfig(rng) {
     kHuntBase:      rng() * 320,         // was 0–300,   top-8 spread 47–291
     kHuntSlope:     rng() * 3.5,         // weak signal — keep wide
     kHuntMax:       400 + rng() * 420,   // was 150–800, top-8 spread 462–796
+    spreadWeight:   rng() * 8,           // new term, default 0; explore widely
   };
 }
 

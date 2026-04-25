@@ -40,6 +40,7 @@ const STRINGS = {
     goldChanceNote: ({ samples }) => `${samples} heuristic rollouts`,
     goldChanceFinal: ({ score }) => `final score ${score}`,
     valueExhausted: ({ value, total }) => `Already revealed all ${total} ${value}s — can't add more.`,
+    openingReason: "Opener — spread-out dominating pattern (saves centre for later)",
     // ----- footer -----
     footerText: "Clean-room helper for Metin2 · Schnapp den König",
     // ----- ui.js dynamic -----
@@ -105,6 +106,7 @@ const STRINGS = {
     goldChanceNote: ({ samples }) => `${samples} Heuristik-Rollouts`,
     goldChanceFinal: ({ score }) => `Endstand ${score}`,
     valueExhausted: ({ value, total }) => `Bereits alle ${total} ${value}er aufgedeckt — keine weiteren möglich.`,
+    openingReason: "Eröffnung — verteiltes Dominanzmuster (Mitte bleibt für später)",
     // ----- Fußzeile -----
     footerText: "Clean-Room-Helfer für Metin2 · Schnapp den König",
     // ----- ui.js dynamisch -----
