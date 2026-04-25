@@ -46,7 +46,192 @@ const els = {
   toast: document.getElementById("toast"),
   moneyRain: document.getElementById("moneyRain"),
   chingSfx: document.getElementById("chingSfx"),
+  likeBtn: document.getElementById("likeBtn"),
+  likeCount: document.getElementById("likeCount"),
+  globalGames: document.getElementById("globalGames"),
+  globalGold: document.getElementById("globalGold"),
+  globalSilver: document.getElementById("globalSilver"),
+  globalBronze: document.getElementById("globalBronze"),
+  globalPctGold: document.getElementById("globalPctGold"),
+  globalPctSilver: document.getElementById("globalPctSilver"),
+  globalPctBronze: document.getElementById("globalPctBronze"),
+  muteBtn: document.getElementById("muteBtn"),
+  minimalUiBtn: document.getElementById("minimalUiBtn"),
+  chatBtn: document.getElementById("chatBtn"),
+  twitchChatMount: document.getElementById("twitchChatMount"),
 };
+
+// ---------- twitch chat embed ----------
+// Twitch's chat iframe requires the `parent` query param to match the hosting
+// hostname (multiple `parent` params allowed). location.hostname covers both
+// production (your github.io) and local file/dev hosts; we add localhost too
+// so opening index.html via a local server still works.
+function mountTwitchChat() {
+  if (!els.twitchChatMount) return;
+  const host = location.hostname || "localhost";
+  const parents = new Set([host, "localhost", "127.0.0.1"]);
+  const parentParams = [...parents].map((p) => `parent=${encodeURIComponent(p)}`).join("&");
+  const iframe = document.createElement("iframe");
+  iframe.src = `https://www.twitch.tv/embed/jogoe/chat?darkpopout&${parentParams}`;
+  iframe.title = "Twitch chat for jogoe";
+  iframe.allow = "autoplay; encrypted-media";
+  els.twitchChatMount.appendChild(iframe);
+}
+mountTwitchChat();
+
+// ---------- header toggles ----------
+// Two simple sticky toggles persisted in localStorage:
+//   - mute:        suppresses the ching.mp3 played when gold locks in.
+//   - minimal-ui:  hides every panel except current card / board / undo+reset.
+const MUTE_KEY = "ctk-mute-v1";
+const MINIMAL_KEY = "ctk-minimal-ui-v1";
+const CHAT_HIDDEN_KEY = "ctk-chat-hidden-v1";
+let muted = localStorage.getItem(MUTE_KEY) === "1";
+function applyMute() {
+  if (els.muteBtn) els.muteBtn.classList.toggle("off", muted);
+}
+function applyMinimalUi() {
+  const on = localStorage.getItem(MINIMAL_KEY) === "1";
+  document.body.classList.toggle("minimal-ui", on);
+  if (els.minimalUiBtn) els.minimalUiBtn.classList.toggle("off", on);
+}
+applyMute();
+applyMinimalUi();
+if (els.muteBtn) {
+  els.muteBtn.addEventListener("click", () => {
+    muted = !muted;
+    localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
+    applyMute();
+  });
+}
+if (els.minimalUiBtn) {
+  els.minimalUiBtn.addEventListener("click", () => {
+    const on = localStorage.getItem(MINIMAL_KEY) !== "1";
+    localStorage.setItem(MINIMAL_KEY, on ? "1" : "0");
+    applyMinimalUi();
+  });
+}
+function applyChatHidden() {
+  const hidden = localStorage.getItem(CHAT_HIDDEN_KEY) === "1";
+  document.body.classList.toggle("chat-hidden", hidden);
+  if (els.chatBtn) els.chatBtn.classList.toggle("off", hidden);
+}
+applyChatHidden();
+if (els.chatBtn) {
+  els.chatBtn.addEventListener("click", () => {
+    const hidden = localStorage.getItem(CHAT_HIDDEN_KEY) !== "1";
+    localStorage.setItem(CHAT_HIDDEN_KEY, hidden ? "1" : "0");
+    applyChatHidden();
+  });
+}
+
+// ---------- like button (free public counter API) ----------
+// abacus.jasoncameron.dev hosts a stateless counter. /get returns the value;
+// /hit increments and returns the new value. localStorage gates the click so
+// one browser can't spam it. Network failures are silently swallowed — the
+// page is fully functional without the like count.
+const LIKE_NS = "ctk-helper-jogoe";
+const LIKE_KEY = "likes";
+const LIKE_BASE = "https://abacus.jasoncameron.dev";
+const LIKE_LOCAL = "ctk-liked-v1";
+function setLikeCount(n) {
+  if (els.likeCount && Number.isFinite(n)) els.likeCount.textContent = String(n);
+}
+function markLiked() {
+  if (els.likeBtn) {
+    els.likeBtn.classList.add("liked");
+    els.likeBtn.disabled = true;
+    els.likeBtn.title = "Thanks!";
+  }
+}
+async function fetchInitialLikes() {
+  try {
+    const r = await fetch(`${LIKE_BASE}/get/${LIKE_NS}/${LIKE_KEY}`);
+    if (r.status === 404) {
+      // Counter doesn't exist yet on the abacus side. /hit auto-creates on
+      // first interaction; until then, show a zero so the UI isn't stuck on "…".
+      setLikeCount(0);
+      return;
+    }
+    if (!r.ok) return;
+    const data = await r.json();
+    setLikeCount(data.value);
+  } catch { /* offline / API down — leave the placeholder. */ }
+}
+async function sendLike() {
+  try {
+    const r = await fetch(`${LIKE_BASE}/hit/${LIKE_NS}/${LIKE_KEY}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    setLikeCount(data.value);
+  } catch { /* swallow — UI already shows liked state. */ }
+}
+if (els.likeBtn) {
+  if (localStorage.getItem(LIKE_LOCAL) === "1") markLiked();
+  els.likeBtn.addEventListener("click", () => {
+    if (localStorage.getItem(LIKE_LOCAL) === "1") return;
+    localStorage.setItem(LIKE_LOCAL, "1");
+    markLiked();
+    sendLike();
+  });
+  fetchInitialLikes();
+}
+
+// ---------- global counters (everyone, all time) ----------
+// Same abacus host as the like button. Four counters under the helper's
+// namespace: games / gold / silver / bronze. We GET all four on load to
+// populate the panel, then HIT one tier counter + the games counter when a
+// game completes locally. Like the like button: 404 → 0, network errors are
+// silently swallowed so the page never breaks.
+const GLOBAL_KEYS = ["games", "gold", "silver", "bronze"];
+const globalCounts = { games: null, gold: null, silver: null, bronze: null };
+function renderGlobalStats() {
+  const g = globalCounts;
+  const fmt = (v) => v == null ? "…" : String(v);
+  els.globalGames.textContent = fmt(g.games);
+  els.globalGold.textContent = fmt(g.gold);
+  els.globalSilver.textContent = fmt(g.silver);
+  els.globalBronze.textContent = fmt(g.bronze);
+  const pct = (n) => (g.games && n != null ? `(${Math.round((n / g.games) * 100)}%)` : "");
+  els.globalPctGold.textContent = pct(g.gold);
+  els.globalPctSilver.textContent = pct(g.silver);
+  els.globalPctBronze.textContent = pct(g.bronze);
+}
+async function fetchGlobalCount(key) {
+  try {
+    const r = await fetch(`${LIKE_BASE}/get/${LIKE_NS}/${key}`);
+    if (r.status === 404) return 0;
+    if (!r.ok) return null;
+    const data = await r.json();
+    return Number.isFinite(data.value) ? data.value : null;
+  } catch { return null; }
+}
+async function fetchAllGlobalCounts() {
+  const results = await Promise.all(GLOBAL_KEYS.map(fetchGlobalCount));
+  for (let i = 0; i < GLOBAL_KEYS.length; i++) {
+    if (results[i] != null) globalCounts[GLOBAL_KEYS[i]] = results[i];
+  }
+  renderGlobalStats();
+}
+async function hitGlobal(key) {
+  try {
+    const r = await fetch(`${LIKE_BASE}/hit/${LIKE_NS}/${key}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    if (Number.isFinite(data.value)) {
+      globalCounts[key] = data.value;
+      renderGlobalStats();
+    }
+  } catch { /* swallow */ }
+}
+function recordGlobalCompletion(score) {
+  // Always count the game; bump exactly one tier so percentages add up.
+  hitGlobal("games");
+  if (score >= CHEST_THRESHOLDS.gold) hitGlobal("gold");
+  else if (score >= CHEST_THRESHOLDS.silver) hitGlobal("silver");
+  else if (score >= CHEST_THRESHOLDS.bronze) hitGlobal("bronze");
+}
+fetchAllGlobalCounts();
 
 // One-shot trigger: fires the money rain + ching the moment this game's gold
 // chance crosses 100%. Reset on game reset so the next gold-locked game can
@@ -56,13 +241,16 @@ const COIN_GLYPHS = ["💰", "💵", "💴", "💶", "💷", "🪙"];
 function triggerGoldRain() {
   if (!els.moneyRain) return;
   // Play sfx — clone the node so rapid retriggers (e.g. after reset) don't
-  // get cut short by the still-playing previous instance.
-  if (els.chingSfx) {
+  // get cut short by the still-playing previous instance. Respects the mute
+  // toggle in the header.
+  if (els.chingSfx && !muted) {
     const sfx = els.chingSfx.cloneNode();
     sfx.volume = 0.7;
     sfx.play().catch(() => { /* autoplay-blocked browsers — silent fail. */ });
   }
   const COIN_COUNT = 36;
+  els.moneyRain.classList.add("active");
+  let remaining = COIN_COUNT;
   for (let i = 0; i < COIN_COUNT; i++) {
     const coin = document.createElement("span");
     coin.className = "coin";
@@ -71,7 +259,12 @@ function triggerGoldRain() {
     coin.style.fontSize = (22 + Math.random() * 18) + "px";
     coin.style.animationDuration = (1.8 + Math.random() * 1.4) + "s";
     coin.style.animationDelay = (Math.random() * 0.8) + "s";
-    coin.addEventListener("animationend", () => coin.remove());
+    coin.addEventListener("animationend", () => {
+      coin.remove();
+      // Once the last coin's gone, drop the overlay so Twitch chat can be
+      // used by channel owners/mods again.
+      if (--remaining <= 0) els.moneyRain.classList.remove("active");
+    });
     els.moneyRain.appendChild(coin);
   }
 }
@@ -124,12 +317,55 @@ function recordGameCompletion(score) {
   else if (score >= CHEST_THRESHOLDS.bronze) s.bronze += 1;
   saveSessionStats(s);
   renderSessionStats();
+  recordGlobalCompletion(score);
 }
 
 function trackGameCompletion() {
   const now = isGameOver(state);
   if (!lastGameOver && now) recordGameCompletion(state.score);
   lastGameOver = now;
+}
+
+// Threshold for crediting an abandoned game: enough clicks that the rollout
+// estimator has real signal, not just opener noise. ~10 actions ≈ past the
+// hand=1 cards into the meaningful info-gathering phase.
+const ABANDONED_MIN_CLICKS = 10;
+
+// Roll a tier from the rollout probabilities. computeChestProbabilities returns
+// CUMULATIVE thresholds (pGold ⊆ pSilver ⊆ pBronze), so tier-exclusive masses
+// are pGold / pSilver-pGold / pBronze-pSilver / 1-pBronze.
+function sampleTierFromProbs(p) {
+  const pGold = p.pGold;
+  const pSilver = Math.max(0, p.pSilver - p.pGold);
+  const pBronze = Math.max(0, p.pBronze - p.pSilver);
+  const r = Math.random();
+  if (r < pGold) return "gold";
+  if (r < pGold + pSilver) return "silver";
+  if (r < pGold + pSilver + pBronze) return "bronze";
+  return null; // sub-bronze
+}
+
+// If the user resets a substantive but unfinished game, count it using a
+// tier sampled from the current solver estimate. Keeps the global ticker (and
+// session table) representative when people abandon late-game positions.
+function flushAbandonedGame() {
+  if (isGameOver(state)) return;
+  if ((state.history?.length ?? 0) < ABANDONED_MIN_CLICKS) return;
+  const probs = computeChestProbabilities(state, { N: 80 });
+  const tier = sampleTierFromProbs(probs);
+
+  // Local session — bump games + tier (or just games for sub-bronze).
+  const s = loadSessionStats();
+  s.games += 1;
+  if (tier === "gold") s.gold += 1;
+  else if (tier === "silver") s.silver += 1;
+  else if (tier === "bronze") s.bronze += 1;
+  saveSessionStats(s);
+  renderSessionStats();
+
+  // Global — same shape, via the abacus counters.
+  hitGlobal("games");
+  if (tier) hitGlobal(tier);
 }
 
 // ---------- toast ----------
@@ -241,6 +477,7 @@ bindKeyboard({
     refresh();
   },
   onReset() {
+    flushAbandonedGame();
     state = createState();
     lastGameOver = false;
     goldRainFired = false;
@@ -249,6 +486,7 @@ bindKeyboard({
 });
 
 els.resetBtn.addEventListener("click", () => {
+  flushAbandonedGame();
   state = createState();
   lastGameOver = false;
   goldRainFired = false;

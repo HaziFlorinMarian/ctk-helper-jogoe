@@ -10,15 +10,26 @@
   <header>
     <h1>Catch the king helper <span class="subtle">für alle (sogar gekkox3)</span></h1>
     <div class="header-meta">
-      <div class="lang-switcher" role="group" aria-label="Language">
-        <button type="button" class="lang-btn" data-lang="en">EN</button>
-        <button type="button" class="lang-btn" data-lang="de">DE</button>
+      <div class="header-controls">
+        <div class="header-toggles" role="group" aria-label="Toggles">
+          <button id="muteBtn" class="icon-toggle" type="button" aria-label="Toggle sound" title="Toggle sound">
+            <span class="icon-on">🔊</span><span class="icon-off">🔇</span>
+          </button>
+          <button id="minimalUiBtn" class="icon-toggle" type="button" aria-label="Toggle minimal UI" title="Toggle minimal UI">
+            <span class="icon-on">▦</span><span class="icon-off">□</span>
+          </button>
+        </div>
+        <div class="lang-switcher" role="group" aria-label="Language">
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+          <button type="button" class="lang-btn" data-lang="de">DE</button>
+        </div>
       </div>
       <span class="discord">discord: @jogoe</span>
       <span class="version">v0.5 - 2026/04/25 11:35</span>
     </div>
   </header>
 
+  <div class="page">
   <main>
     <aside class="stats-panel">
       <div class="info-block">
@@ -65,6 +76,36 @@
         </ul>
         <button id="sessionResetBtn" class="action-btn session-reset" type="button" data-i18n="reset">Reset</button>
       </div>
+      <div class="info-block">
+        <div class="label" data-i18n="globalAllTime">Everyone (all time)</div>
+        <ul class="session-list">
+          <li class="session-row">
+            <span class="session-name" data-i18n="games">Games</span>
+            <span><span id="globalGames">…</span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-gold" data-i18n="gold">Gold</span>
+            <span><span id="globalGold">…</span>&nbsp;<span id="globalPctGold" class="session-pct"></span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-silver" data-i18n="silver">Silver</span>
+            <span><span id="globalSilver">…</span>&nbsp;<span id="globalPctSilver" class="session-pct"></span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-bronze" data-i18n="bronze">Bronze</span>
+            <span><span id="globalBronze">…</span>&nbsp;<span id="globalPctBronze" class="session-pct"></span></span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="like-block">
+        <p class="like-prompt" data-i18n="likePrompt">Enjoying the helper? Drop a like &mdash;</p>
+        <button id="likeBtn" class="like-btn" type="button" aria-label="Like" title="Like">
+          <span class="like-heart">♥</span>
+          <span id="likeCount" class="like-count">…</span>
+        </button>
+      </div>
+
       <div class="promo-text">
       Bored? Waiting for your sets to farm? Check out the <a href="https://dominikloefflerniteo.github.io/metin_upgradesim/" target="_blank">Metin2 Upgrade Simulator</a>.
     </div>
@@ -134,9 +175,23 @@
     </aside>
   </main>
 
+  <aside class="chat-panel">
+    <div class="info-block chat-block">
+      <div class="label">
+        <span data-i18n="twitchChat">Chat</span>
+      </div>
+      <div id="twitchChatMount" class="twitch-chat-mount"></div>
+    </div>
+  </aside>
+  </div>
+
   <footer>
     <span class="subtle" data-i18n="footerText">Clean-room helper for Metin2 &middot; Schnapp den K&ouml;nig</span>
   </footer>
+
+  <button id="chatBtn" class="chat-tab" type="button" aria-label="Toggle chat" title="Toggle chat">
+    <span class="chat-tab-arrow"></span>
+  </button>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="moneyRain" class="money-rain" aria-hidden="true"></div>

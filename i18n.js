@@ -13,6 +13,7 @@ const STRINGS = {
     acrossRounds: "across 100,000 rounds",
     // ----- left panel: session -----
     session: "Session",
+    globalAllTime: "Everyone (all time)",
     games: "Games",
     reset: "Reset",
     // ----- disclaimer / help -----
@@ -41,6 +42,8 @@ const STRINGS = {
     goldChanceFinal: ({ score }) => `final score ${score}`,
     valueExhausted: ({ value, total }) => `Already revealed all ${total} ${value}s — can't add more.`,
     openingReason: "Opener — spread-out dominating pattern (saves centre for later)",
+    likePrompt: "Enjoying the helper? Drop a like —",
+    twitchChat: "Chat",
     // ----- footer -----
     footerText: "Clean-room helper for Metin2 · Schnapp den König",
     // ----- ui.js dynamic -----
@@ -78,6 +81,7 @@ const STRINGS = {
     acrossRounds: "über 100.000 Runden",
     // ----- Linkes Panel: Sitzung -----
     session: "Sitzung",
+    globalAllTime: "Alle (gesamt)",
     games: "Spiele",
     reset: "Zurücksetzen",
     // ----- Hinweis / Hilfe -----
@@ -107,6 +111,8 @@ const STRINGS = {
     goldChanceFinal: ({ score }) => `Endstand ${score}`,
     valueExhausted: ({ value, total }) => `Bereits alle ${total} ${value}er aufgedeckt — keine weiteren möglich.`,
     openingReason: "Eröffnung — verteiltes Dominanzmuster (Mitte bleibt für später)",
+    likePrompt: "Gefällt dir der Helfer? Lass ein Like da —",
+    twitchChat: "Chat",
     // ----- Fußzeile -----
     footerText: "Clean-Room-Helfer für Metin2 · Schnapp den König",
     // ----- ui.js dynamisch -----

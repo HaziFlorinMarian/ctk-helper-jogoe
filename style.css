@@ -554,7 +554,12 @@ footer {
   pointer-events: none;
   overflow: hidden;
   z-index: 9999;
+  /* Default to display:none so the empty container doesn't sit over the
+     Twitch iframe — Twitch's anti-clickjacking detection blocks chat when
+     ANY element overlaps their iframe rect, even with pointer-events:none. */
+  display: none;
 }
+.money-rain.active { display: block; }
 .money-rain .coin {
   position: absolute;
   top: -10vh;
@@ -578,4 +583,246 @@ footer {
 @keyframes goldLockedPulse {
   0%, 100% { filter: brightness(1);    text-shadow: 0 0 6px currentColor, 0 0 14px currentColor; }
   50%      { filter: brightness(1.35); text-shadow: 0 0 12px currentColor, 0 0 26px currentColor; }
+}
+
+/* Like block — sits in the stats sidebar above the promo. Subtle gradient
+   panel + soft pink halo so it reads as a friendly call-to-action without
+   competing with the solver stats above. */
+.like-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px;
+  margin: 12px 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(255, 83, 115, 0.07), rgba(255, 83, 115, 0.02) 60%, transparent);
+  text-align: center;
+}
+.like-prompt {
+  margin: 0;
+  font-size: 12px;
+  color: var(--fg-dim);
+  line-height: 1.35;
+}
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease, box-shadow 200ms ease;
+}
+.like-btn:hover:not(:disabled) {
+  background: var(--bg-2);
+  border-color: #ff5373;
+  box-shadow: 0 0 0 4px rgba(255, 83, 115, 0.15);
+}
+.like-btn:active:not(:disabled) { transform: scale(0.96); }
+.like-btn:disabled { cursor: default; opacity: 0.95; }
+.like-btn.liked {
+  border-color: rgba(255, 83, 115, 0.55);
+  box-shadow: 0 0 0 3px rgba(255, 83, 115, 0.18);
+}
+.like-btn .like-heart {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--fg-dim);
+  transition: color 200ms ease, transform 200ms ease, text-shadow 200ms ease;
+}
+.like-btn:hover:not(:disabled) .like-heart { color: #ff7a93; }
+.like-btn.liked .like-heart {
+  color: #ff5373;
+  text-shadow: 0 0 10px rgba(255, 83, 115, 0.65);
+  animation: likeBump 380ms ease;
+}
+.like-btn .like-count {
+  font-variant-numeric: tabular-nums;
+  min-width: 1.6em;
+  text-align: right;
+  font-size: 15px;
+}
+@keyframes likeBump {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.55); }
+  70%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+/* Header controls row — toggles + lang switcher share one line, all matching
+   the lang-btn height/typography so it reads as a single bar. */
+.header-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-toggles {
+  display: inline-flex;
+  gap: 2px;
+}
+.icon-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  min-width: 28px;
+  padding: 0 6px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+.icon-toggle:hover { background: var(--bg-2); border-color: var(--fg-dim); }
+.icon-toggle .icon-off { display: none; }
+.icon-toggle.off .icon-on { display: none; }
+.icon-toggle.off .icon-off { display: inline; opacity: 0.7; }
+
+/* Minimal UI — strips everything except the current card, the board, and the
+   undo/reset row. Sidebars collapse so the board fills the screen. */
+body.minimal-ui main {
+  grid-template-columns: 1fr;
+}
+body.minimal-ui .stats-panel,
+body.minimal-ui .disclaimer,
+body.minimal-ui .help {
+  display: none;
+}
+body.minimal-ui .info-panel > .info-block { display: none; }
+body.minimal-ui .info-panel > .info-block:first-child,           /* current card */
+body.minimal-ui .info-panel > .info-block.button-row {           /* undo + reset */
+  display: block;
+}
+body.minimal-ui .board { max-width: 720px; margin: 0 auto; }
+
+/* Twitch chat embed — sits at the bottom of the right info-panel. The iframe
+   is owned by Twitch (we can't restyle its internals), so we contain it in a
+   bordered card to match the rest of the panel. Hidden in minimal-ui mode by
+   the existing `.info-panel > .info-block { display: none; }` rule. */
+.chat-block .label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.chat-channel {
+  font-size: 11px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.3px;
+}
+.chat-channel:hover { text-decoration: underline; }
+.twitch-chat-mount {
+  height: 460px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #18181b;
+}
+.twitch-chat-mount iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Page-level horizontal layout: main grid (centered, max-width preserved) on
+   the left, persistent Twitch chat column on the right. The chat sticks to
+   the right edge of the viewport, independent of main's max-width. */
+.page {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  gap: 0;
+  min-height: 0;
+}
+.page > main {
+  flex: 1;
+  min-width: 0;
+}
+.chat-panel {
+  flex: 0 0 420px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 24px 24px 0;
+  border-left: 1px solid var(--border);
+}
+.chat-panel .chat-block {
+  display: flex;
+  flex-direction: column;
+  margin-left: 24px;
+  height: 50vh;
+}
+.chat-panel .twitch-chat-mount {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+
+/* Hide chat in minimal-UI mode along with the rest of the chrome. */
+body.minimal-ui .chat-panel { display: none; }
+body.minimal-ui .chat-tab { display: none; }
+/* Manual chat collapse from the edge tab. */
+body.chat-hidden .chat-panel { display: none; }
+
+/* Edge tab — half-pill button glued to the chat panel's left border (or to
+   the viewport's right edge when chat is collapsed). Arrow points toward the
+   action: ◀ to expand, ▶ to collapse. */
+.chat-tab {
+  position: fixed;
+  top: 50%;
+  right: 420px; /* matches .chat-panel flex basis when chat is open */
+  transform: translateY(-50%);
+  width: 22px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-right: 0;
+  color: var(--fg-dim);
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  z-index: 50;
+  transition: right 160ms ease, background 120ms ease, color 120ms ease;
+}
+.chat-tab:hover { background: var(--bg-2); color: var(--fg); }
+.chat-tab-arrow {
+  display: inline-block;
+  width: 0; height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid currentColor; /* chat open → arrow points right (toward where it'll collapse) */
+}
+body.chat-hidden .chat-tab { right: 0; }
+body.chat-hidden .chat-tab-arrow {
+  border-left: 0;
+  border-right: 6px solid currentColor; /* chat hidden → arrow points left (toward where it'll re-open) */
+}
+
+/* Narrow viewports — drop the chat under main rather than squashing the grid. */
+@media (max-width: 1100px) {
+  .page { flex-direction: column; }
+  .chat-panel {
+    flex: 0 0 auto;
+    padding: 0 24px 24px;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .chat-panel .chat-block { margin-left: 0; margin-top: 16px; }
+  .chat-panel .twitch-chat-mount { min-height: 400px; }
+  .chat-tab { display: none; }
 }
