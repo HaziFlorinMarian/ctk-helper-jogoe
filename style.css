@@ -826,3 +826,14 @@ body.chat-hidden .chat-tab-arrow {
   .chat-panel .twitch-chat-mount { min-height: 400px; }
   .chat-tab { display: none; }
 }
+
+.version-views {
+  margin-left: 6px;
+  color: var(--fg-dim);
+  opacity: 0.85;
+}
+.version-views::before {
+  content: "·";
+  margin-right: 6px;
+  opacity: 0.7;
+}

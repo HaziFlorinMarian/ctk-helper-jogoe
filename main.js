@@ -233,6 +233,24 @@ function recordGlobalCompletion(score) {
 }
 fetchAllGlobalCounts();
 
+// ---------- page-open counter ----------
+// Bumped once per page load. Shown next to the version line. We don't dedup
+// across reloads — that's the standard "page views" semantic.
+const versionViewsEl = document.getElementById("versionViews");
+async function bumpPageOpens() {
+  if (!versionViewsEl) return;
+  try {
+    const r = await fetch(`${LIKE_BASE}/hit/${LIKE_NS}/page-opens`);
+    if (!r.ok) return;
+    const data = await r.json();
+    if (Number.isFinite(data.value)) {
+      const formatted = data.value.toLocaleString();
+      versionViewsEl.textContent = `${formatted} page opens`;
+    }
+  } catch { /* offline / API down — leave the slot empty. */ }
+}
+bumpPageOpens();
+
 // One-shot trigger: fires the money rain + ching the moment this game's gold
 // chance crosses 100%. Reset on game reset so the next gold-locked game can
 // retrigger it.
