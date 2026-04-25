@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catch the king helper für gekkox3 uwu owo &lt;3</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Catch the King helper <span class="subtle">with Heuristic move suggestion</span></h1>
+    <div class="header-meta">
+      <div class="header-controls">
+        <div class="header-toggles" role="group" aria-label="Toggles">
+          <button id="muteBtn" class="icon-toggle" type="button" aria-label="Toggle sound" title="Toggle sound">
+            <span class="icon-on">🔊</span><span class="icon-off">🔇</span>
+          </button>
+          <button id="minimalUiBtn" class="icon-toggle" type="button" aria-label="Toggle minimal UI" title="Toggle minimal UI">
+            <span class="icon-on">▦</span><span class="icon-off">□</span>
+          </button>
+          <button id="aboutBtn" class="icon-toggle" type="button" aria-label="About this project" title="About this project">
+            <span class="icon-on">?</span><span class="icon-off">?</span>
+          </button>
+        </div>
+        <div class="lang-switcher" role="group" aria-label="Language">
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+          <button type="button" class="lang-btn" data-lang="de">DE</button>
+        </div>
+      </div>
+      <span class="discord">discord: @jogoe</span>
+      <span class="version">v0.6 - 2026/04/25 11:35<span class="version-views" id="versionViews"></span></span>
+    </div>
+  </header>
+
+  <div class="page">
+  <main>
+    <aside class="stats-panel">
+      <div class="info-block">
+        <div class="label" data-i18n="solverChestRate">Solver's chest rate</div>
+        <ul class="chest-list">
+          <li class="chest-row chest-gold">
+            <span class="chest-name" data-i18n="gold">Gold</span>
+            <span class="chest-target">&ge;550</span>
+            <span class="chest-pct">41.9%</span>
+          </li>
+          <li class="chest-row chest-silver">
+            <span class="chest-name" data-i18n="silver">Silver</span>
+            <span class="chest-target">400&ndash;549</span>
+            <span class="chest-pct">46.2%</span>
+          </li>
+          <li class="chest-row chest-bronze">
+            <span class="chest-name" data-i18n="bronze">Bronze</span>
+            <span class="chest-target">100&ndash;399</span>
+            <span class="chest-pct">12.0%</span>
+          </li>
+        </ul>
+        <div class="chest-note" data-i18n="acrossRounds">across 100,000 rounds</div>
+      </div>
+
+      <div class="info-block">
+        <div class="label" data-i18n="session">Session</div>
+        <ul class="session-list">
+          <li class="session-row">
+            <span class="session-name" data-i18n="games">Games</span>
+            <span><span id="sessionGames">0</span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-gold" data-i18n="gold">Gold</span>
+            <span><span id="sessionGold">0</span>&nbsp;<span id="sessionPctGold" class="session-pct"></span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-silver" data-i18n="silver">Silver</span>
+            <span><span id="sessionSilver">0</span>&nbsp;<span id="sessionPctSilver" class="session-pct"></span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-bronze" data-i18n="bronze">Bronze</span>
+            <span><span id="sessionBronze">0</span>&nbsp;<span id="sessionPctBronze" class="session-pct"></span></span>
+          </li>
+        </ul>
+        <button id="sessionResetBtn" class="action-btn session-reset" type="button" data-i18n="reset">Reset</button>
+      </div>
+      <div class="info-block">
+        <div class="label" data-i18n="globalAllTime">Everyone (all time)</div>
+        <ul class="session-list">
+          <li class="session-row">
+            <span class="session-name" data-i18n="games">Games</span>
+            <span><span id="globalGames">…</span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-gold" data-i18n="gold">Gold</span>
+            <span><span id="globalGold">…</span>&nbsp;<span id="globalPctGold" class="session-pct"></span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-silver" data-i18n="silver">Silver</span>
+            <span><span id="globalSilver">…</span>&nbsp;<span id="globalPctSilver" class="session-pct"></span></span>
+          </li>
+          <li class="session-row">
+            <span class="session-name chest-bronze" data-i18n="bronze">Bronze</span>
+            <span><span id="globalBronze">…</span>&nbsp;<span id="globalPctBronze" class="session-pct"></span></span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="like-block">
+        <p class="like-prompt" data-i18n="likePrompt">Enjoying the helper? Drop a like!</p>
+        <button id="likeBtn" class="like-btn" type="button" aria-label="Like" title="Like">
+          <span class="like-heart">♥</span>
+          <span id="likeCount" class="like-count">…</span>
+        </button>
+      </div>
+
+      <div class="promo-text">
+      Bored? Waiting for your sets to farm? Check out the <a href="https://dominikloefflerniteo.github.io/metin_upgradesim/" target="_blank">Metin2 Upgrade Simulator</a>.
+    </div>
+    </aside>
+
+    
+
+    <section class="board-panel">
+      <div id="board" class="board" aria-label="5x5 game board"></div>
+
+      <div class="help">
+        <p data-i18n-html="helpIntro"></p>
+        <ul>
+          <li data-i18n-html="helpReveal"></li>
+          <li data-i18n-html="helpShift"></li>
+          <li data-i18n-html="helpClick"></li>
+          <li data-i18n-html="helpBackspace"></li>
+          <li data-i18n-html="helpEsc"></li>
+        </ul>
+      </div>
+    </section>
+
+    <aside class="info-panel">
+      <div class="info-block">
+        <div class="label" data-i18n="currentCard">Current card</div>
+        <div id="currentCard" class="current-card">1</div>
+        <div id="turnHint" class="turn-hint"></div>
+      </div>
+
+      <div class="info-block">
+        <div class="label" data-i18n="score">Score</div>
+        <div id="score" class="score">0</div>
+        <div class="score-target" data-i18n="target550">target 550</div>
+        <div id="scoreCeiling" class="score-ceiling"></div>
+      </div>
+
+      <div class="info-block">
+        <div class="label" data-i18n="goldChance">Gold chance (this game)</div>
+        <div id="gameGoldPct" class="game-gold-pct">&mdash;</div>
+        <div id="gameGoldNote" class="game-gold-note">&mdash;</div>
+      </div>
+
+      <div class="info-block">
+        <div class="label" data-i18n="remainingOnBoard">Remaining on board</div>
+        <ul id="remaining" class="remaining"></ul>
+      </div>
+
+      <div class="info-block">
+        <div class="label suggestion-label">
+          <span data-i18n="suggestion">Suggestion</span>
+          <!-- PIMC toggle kept in-DOM (hidden) so the wiring in main.js still
+               resolves; flip display:flex below to re-expose it. -->
+          <span class="solver-mode-row" hidden>
+            <span id="solverMode" class="solver-mode">Heuristic</span>
+            <button id="solverToggleBtn" class="solver-toggle" type="button" title="Switch between the heuristic solver and PIMC (experimental Monte Carlo rollouts)">switch</button>
+          </span>
+        </div>
+        <div id="suggestionNote" class="suggestion-note">&mdash;</div>
+      </div>
+
+      <div class="info-block button-row">
+        <button id="undoBtn" class="action-btn" type="button" disabled data-i18n="undo">Undo</button>
+        <button id="resetBtn" class="reset-btn" type="button" data-i18n="reset">Reset</button>
+      </div>
+    </aside>
+  </main>
+
+  <aside class="chat-panel">
+    <div class="info-block chat-block">
+      <div class="label">
+        <span data-i18n="twitchChat">Chat</span>
+      </div>
+      <div id="twitchChatMount" class="twitch-chat-mount"></div>
+    </div>
+  </aside>
+  </div>
+
+  <footer>
+    <span class="subtle" data-i18n="footerText">Clean-room helper for Metin2 &middot; Schnapp den K&ouml;nig</span>
+  </footer>
+
+  <button id="chatBtn" class="chat-tab" type="button" aria-label="Toggle chat" title="Toggle chat">
+    <span class="chat-tab-arrow"></span>
+  </button>
+
+  <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" tabindex="-1">
+      <button class="modal-close" type="button" aria-label="Close" data-close>&times;</button>
+      <h2 id="aboutTitle" data-i18n="aboutTitle">About this project</h2>
+
+      <h3 data-i18n="aboutPrivacyHeading">Your data</h3>
+      <div data-i18n-html="aboutPrivacyBody"></div>
+
+      <h3 data-i18n="aboutSolverHeading">How the solver works</h3>
+      <div data-i18n-html="aboutSolverBody"></div>
+
+      <h3 data-i18n="aboutFindingsHeading">What we tried</h3>
+      <div data-i18n-html="aboutFindingsBody"></div>
+
+      <h3 data-i18n="aboutLimitsHeading">Why we can't be perfect</h3>
+      <div data-i18n-html="aboutLimitsBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="moneyRain" class="money-rain" aria-hidden="true"></div>
+  <audio id="chingSfx" src="ching.mp3" preload="auto"></audio>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
