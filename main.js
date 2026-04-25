@@ -125,6 +125,29 @@ if (els.chatBtn) {
   });
 }
 
+// ---------- about modal ----------
+const aboutBtn = document.getElementById("aboutBtn");
+const aboutModal = document.getElementById("aboutModal");
+function openAbout() {
+  if (!aboutModal) return;
+  aboutModal.hidden = false;
+  // Push focus into the dialog so Esc / Tab work as expected.
+  const card = aboutModal.querySelector(".modal-card");
+  if (card) card.focus();
+}
+function closeAbout() {
+  if (aboutModal) aboutModal.hidden = true;
+}
+if (aboutBtn) aboutBtn.addEventListener("click", openAbout);
+if (aboutModal) {
+  aboutModal.addEventListener("click", (e) => {
+    if (e.target instanceof Element && e.target.hasAttribute("data-close")) closeAbout();
+  });
+}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && aboutModal && !aboutModal.hidden) closeAbout();
+});
+
 // ---------- like button (free public counter API) ----------
 // abacus.jasoncameron.dev hosts a stateless counter. /get returns the value;
 // /hit increments and returns the new value. localStorage gates the click so
