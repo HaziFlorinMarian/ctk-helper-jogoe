@@ -544,3 +544,38 @@ footer {
   }
   .board { max-width: 100%; }
 }
+
+/* Money rain — fires when this game's gold chance hits 100%. The container is
+   non-interactive (pointer-events: none) so it never blocks clicks. Coins are
+   absolutely positioned and removed once their fall animation ends. */
+.money-rain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 9999;
+}
+.money-rain .coin {
+  position: absolute;
+  top: -10vh;
+  font-size: 28px;
+  user-select: none;
+  will-change: transform, opacity;
+  animation: coinFall linear forwards;
+}
+@keyframes coinFall {
+  0%   { transform: translateY(0) rotate(0deg);    opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(115vh) rotate(720deg); opacity: 0.2; }
+}
+
+/* Gold-locked glow — pulses the gold-chance % when this game can no longer
+   miss the gold chest. Uses currentColor so it picks up the .hot tint. */
+.game-gold-pct.locked {
+  animation: goldLockedPulse 1.4s ease-in-out infinite;
+  text-shadow: 0 0 8px currentColor, 0 0 18px currentColor;
+}
+@keyframes goldLockedPulse {
+  0%, 100% { filter: brightness(1);    text-shadow: 0 0 6px currentColor, 0 0 14px currentColor; }
+  50%      { filter: brightness(1.35); text-shadow: 0 0 12px currentColor, 0 0 26px currentColor; }
+}

@@ -44,7 +44,37 @@ const els = {
   gameGoldPct: document.getElementById("gameGoldPct"),
   gameGoldNote: document.getElementById("gameGoldNote"),
   toast: document.getElementById("toast"),
+  moneyRain: document.getElementById("moneyRain"),
+  chingSfx: document.getElementById("chingSfx"),
 };
+
+// One-shot trigger: fires the money rain + ching the moment this game's gold
+// chance crosses 100%. Reset on game reset so the next gold-locked game can
+// retrigger it.
+let goldRainFired = false;
+const COIN_GLYPHS = ["💰", "💵", "💴", "💶", "💷", "🪙"];
+function triggerGoldRain() {
+  if (!els.moneyRain) return;
+  // Play sfx — clone the node so rapid retriggers (e.g. after reset) don't
+  // get cut short by the still-playing previous instance.
+  if (els.chingSfx) {
+    const sfx = els.chingSfx.cloneNode();
+    sfx.volume = 0.7;
+    sfx.play().catch(() => { /* autoplay-blocked browsers — silent fail. */ });
+  }
+  const COIN_COUNT = 36;
+  for (let i = 0; i < COIN_COUNT; i++) {
+    const coin = document.createElement("span");
+    coin.className = "coin";
+    coin.textContent = COIN_GLYPHS[i % COIN_GLYPHS.length];
+    coin.style.left = (Math.random() * 100) + "vw";
+    coin.style.fontSize = (22 + Math.random() * 18) + "px";
+    coin.style.animationDuration = (1.8 + Math.random() * 1.4) + "s";
+    coin.style.animationDelay = (Math.random() * 0.8) + "s";
+    coin.addEventListener("animationend", () => coin.remove());
+    els.moneyRain.appendChild(coin);
+  }
+}
 
 let state = createState();
 // Heuristic is the active solver. The PIMC toggle is wired but hidden in the
@@ -132,9 +162,16 @@ function queueGoldChanceUpdate() {
     els.gameGoldPct.classList.toggle("hot",  r.pGold >= 0.6);
     els.gameGoldPct.classList.toggle("warm", r.pGold >= 0.3 && r.pGold < 0.6);
     els.gameGoldPct.classList.toggle("cold", r.pGold < 0.3);
+    els.gameGoldPct.classList.toggle("locked", r.pGold >= 0.999);
     els.gameGoldNote.textContent = r.gameOver
       ? t("goldChanceFinal", { score: r.eScore })
       : t("goldChanceNote", { samples: r.samples });
+    // Fire the rain the first time gold becomes locked-in this game. Use
+    // pGold >= 0.999 instead of === 1 so float fuzz can't hide the trigger.
+    if (!goldRainFired && r.pGold >= 0.999) {
+      goldRainFired = true;
+      triggerGoldRain();
+    }
   }, 0);
 }
 
@@ -206,6 +243,7 @@ bindKeyboard({
   onReset() {
     state = createState();
     lastGameOver = false;
+    goldRainFired = false;
     refresh();
   },
 });
@@ -213,6 +251,7 @@ bindKeyboard({
 els.resetBtn.addEventListener("click", () => {
   state = createState();
   lastGameOver = false;
+  goldRainFired = false;
   refresh();
 });
 
