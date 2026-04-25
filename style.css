@@ -267,13 +267,50 @@ main {
 
 .cell.suggested {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.25), inset 0 0 0 2px var(--accent);
+  box-shadow:
+    0 0 0 4px rgba(242, 201, 76, 0.35),
+    0 0 18px 4px rgba(242, 201, 76, 0.55),
+    inset 0 0 0 2px var(--accent);
   animation: pulse 1.3s ease-in-out infinite;
 }
 
+/* Floating "TIPP" pill badge so the suggestion is unmistakable. Sits on the
+   top-left corner of the cell, animated with the same pulse rhythm. */
+.cell.suggested::before {
+  content: "TIPP";
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 2px 7px;
+  background: var(--accent);
+  color: #1a1a1a;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 8px rgba(242, 201, 76, 0.6);
+  z-index: 4;
+  pointer-events: none;
+  animation: tip-bob 1.3s ease-in-out infinite;
+}
+
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.25), inset 0 0 0 2px var(--accent); }
-  50%      { box-shadow: 0 0 0 6px rgba(242, 201, 76, 0.35), inset 0 0 0 2px var(--accent); }
+  0%, 100% {
+    box-shadow:
+      0 0 0 4px rgba(242, 201, 76, 0.35),
+      0 0 18px 4px rgba(242, 201, 76, 0.55),
+      inset 0 0 0 2px var(--accent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(242, 201, 76, 0.5),
+      0 0 28px 6px rgba(242, 201, 76, 0.75),
+      inset 0 0 0 2px var(--accent);
+  }
+}
+@keyframes tip-bob {
+  0%, 100% { transform: translateY(0)    rotate(-4deg); }
+  50%      { transform: translateY(-3px) rotate(-1deg); }
 }
 
 .money-icon-wrap {
