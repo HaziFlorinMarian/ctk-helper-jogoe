@@ -234,8 +234,7 @@ const STRINGS = {
         "Österreich</p>" +
       "<p>Kontakt: Discord <code>@jogoe</code></p>" +
       "<p>Verantwortlich für den Inhalt nach §18 Abs. 2 MStV: siehe oben.</p>" +
-      "<p><i>Haftungsausschluss:</i> Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich.</p>" +
-      "<p class='legal-todo'><b>TODO:</b> Vor Veröffentlichung Name und Anschrift in den Klammerfeldern eintragen — gesetzlich vorgeschrieben für jede regelmäßig zugängliche Seite eines deutschen Betreibers.</p>",
+      "<p><i>Haftungsausschluss:</i> Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich.</p>",
     datenschutzTitle: "Datenschutzerklärung",
     datenschutzBody:
       "<p><b>1. Verantwortlicher</b><br>Siehe Impressum.</p>" +
