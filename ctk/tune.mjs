@@ -106,21 +106,34 @@ function evaluateConfig(weights, boards) {
 // `spreadWeight` was added with the dominating-set opener; we sweep it from
 // 0 (off) up to a generous ceiling.
 function sampleConfig(rng) {
+  // Per-phase sampler: independent draws for early/mid/late so the tuner can
+  // discover phase-specific tradeoffs (e.g. higher info in early, higher
+  // K-hunt in late) that a single-config search has to average out.
+  const perPhase = (lo, hi) => ({
+    early: lo + rng() * (hi - lo),
+    mid:   lo + rng() * (hi - lo),
+    late:  lo + rng() * (hi - lo),
+  });
   return {
-    catchPenalty:   400 + rng() * 1200,  // top-8 spread 510–1498
-    infoWeight:     8 + rng() * 28,      // bits-scale: pre-sweep peak 15–30
-    centerTiebreak: rng() * 0.05,        // weak signal — keep wide
-    chainBonusMul:  1.2 + rng() * 1.4,   // top-8 spread 1.31–2.40
-    kHuntBase:      rng() * 320,         // top-8 spread 47–291
-    kHuntSlope:     rng() * 3.5,         // weak signal — keep wide
-    kHuntMax:       400 + rng() * 420,   // top-8 spread 462–796
-    spreadWeight:   rng() * 8,           // small effect at default 0
+    catchPenalty:   400 + rng() * 1200,  // hand=5 only — phase-flat
+    centerTiebreak: rng() * 0.05,        // weak signal — phase-flat
+    infoWeight:     perPhase(8, 36),     // bits-scale, prior sweet spot 15–30
+    chainBonusMul:  perPhase(1.2, 2.6),  // chain-continuation EV mul
+    kHuntBase:      perPhase(0, 320),    // K-hunt floor
+    kHuntSlope:     perPhase(0, 3.5),    // gap-scaled slope
+    kHuntMax:       perPhase(400, 820),  // K-hunt ceiling
+    spreadWeight:   perPhase(0, 8),      // board-coverage bonus
   };
 }
 
 function formatConfig(c) {
+  const fmtScalar = (v) => Number(v).toFixed(3);
+  const fmtPhase = (obj) => `{ early: ${fmtScalar(obj.early)}, mid: ${fmtScalar(obj.mid)}, late: ${fmtScalar(obj.late)} }`;
   const keys = Object.keys(DEFAULT_WEIGHTS);
-  const parts = keys.map((k) => `${k}: ${c[k].toFixed(3)}`);
+  const parts = keys.map((k) => {
+    const v = c[k];
+    return `${k}: ${typeof v === "object" ? fmtPhase(v) : fmtScalar(v)}`;
+  });
   return "{ " + parts.join(", ") + " }";
 }
 

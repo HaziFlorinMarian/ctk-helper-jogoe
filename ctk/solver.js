@@ -53,25 +53,56 @@ const OPENING_PATTERN = [1, 3, 16, 18];
 // lifted pGold from 31.6% to 40.1% vs. a hand-tuned starting point.
 // Chain-greed (chainBonusMul) and info-seeking (infoWeight) were the biggest
 // wins — both came in well below the game's optimum.
+// Phase-split weights. Each tunable dimension that genuinely behaves
+// differently across the game gets a separate value per phase:
+//   - early: hand="1"     (handIndex 0–4)   — info-gathering, no chains
+//   - mid:   hand="2"–"4" (handIndex 5–9)   — chains start, mid-game decisions
+//   - late:  hand="5"/"K" (handIndex 10–11) — safety + endgame
+// Phase-flat weights stay scalar (catchPenalty only fires hand=5; centerTiebreak
+// is a weak tiebreaker the tuner found no signal in).
+//
+// Existing single-config values seeded into all 3 phases as a starting point;
+// a fresh tuner sweep can then specialise each phase independently.
 export const DEFAULT_WEIGHTS = {
-  catchPenalty: 612,      // hand=5 catch-risk aversion (× P(any 5 adjacent))
-  infoWeight: 20,         // multiplier on Shannon info gain (bits) about the 5-placement
-  centerTiebreak: 0.037,  // microscopic bias toward the grid centre
-  chainBonusMul: 1.94,    // multiplier on the chain-continuation expected value
-  kHuntBase: 150,         // K-hunt weight when score already near target
-  kHuntSlope: 2.46,       // extra K-hunt weight per point of gap to 550
-  kHuntMax: 727,          // ceiling so K-hunt can't wholly crowd out EV
-  spreadWeight: 0,        // bonus per neighbour not yet adjacent to a reveal
+  catchPenalty: 612,                                        // hand=5 only — phase-flat
+  centerTiebreak: 0.037,                                    // weak tiebreak — phase-flat
+  infoWeight:    { early: 20,   mid: 20,   late: 20 },      // Shannon info gain × multiplier
+  chainBonusMul: { early: 1.94, mid: 1.94, late: 1.94 },    // chain-continuation EV × mul
+  kHuntBase:     { early: 150,  mid: 150,  late: 150 },     // K-hunt floor
+  kHuntSlope:    { early: 2.46, mid: 2.46, late: 2.46 },    // extra weight per pt of gap
+  kHuntMax:      { early: 727,  mid: 727,  late: 727 },     // K-hunt ceiling
+  spreadWeight:  { early: 0,    mid: 0,    late: 0 },       // board-coverage prior
+  bingoProgressWeight: { early: 12, mid: 12, late: 12 },    // partial-line credit (sum of (othersDone/4)^2 over incomplete lines)
 };
+
+// Phase derived from the current hand. Recomputed per call (cheap).
+function phaseFor(state) {
+  const h = state.handIndex;
+  if (h <= 4) return "early";
+  if (h <= 9) return "mid";
+  return "late";
+}
+
+// Resolve a phase-keyed weight to a scalar — accepts either the phase-split
+// object form or a legacy flat scalar (so tests / external callers passing
+// flat objects still work).
+function pick(w, key, phase) {
+  const v = w[key];
+  if (v == null) return 0;
+  return typeof v === "object" ? v[phase] : v;
+}
 
 // The K-turn's +100 is often the difference between the silver (400) and gold
 // (550) chest. When the current score is far below 550, revealing K early —
 // which converts the K-turn from a probability-weighted guess into a
 // deterministic +100 — is the highest-leverage move available. Scale the
 // K-hunt bonus by the score gap so it automatically goes up when we need it.
-function kHuntWeight(state, w) {
+function kHuntWeight(state, w, phase) {
   const gap = Math.max(0, SCORE_TARGET - state.score);
-  return Math.min(w.kHuntMax, w.kHuntBase + gap * w.kHuntSlope);
+  const base = pick(w, "kHuntBase", phase);
+  const slope = pick(w, "kHuntSlope", phase);
+  const max = pick(w, "kHuntMax", phase);
+  return Math.min(max, base + gap * slope);
 }
 
 // "Informative" neighbors — neighbors whose 5-status the flash signal can
@@ -207,25 +238,27 @@ function expectedPointsIfFiveTurn(dist) {
   return ev;
 }
 
-// Probability that at least one face-down 8-neighbor of `cellIdx` is a 5,
-// conditioned on the cell itself having a specified value (approximate: we
-// treat the neighbor 5-probabilities as independent, which is a reasonable
-// first-order approximation).
-function probAnyNeighborIsFive(state, cellIdx, pFive) {
-  // Any adjacent revealed 5 guarantees a catch.
+// Exact P(at least one face-down 8-neighbor of `cellIdx` is a 5), computed
+// from the enumerated consistent 5-placements. Replaces the old independence
+// approximation — neighbours that compete for the same 5-supply are
+// negatively correlated, while flash-constrained neighbours are positively
+// correlated, so a marginal-product underestimates one and overestimates the
+// other. The exact ratio fixes both.
+function probAnyNeighborIsFive(state, cellIdx, placements) {
+  // Any already-revealed adjacent 5 guarantees a catch — short-circuit.
   for (const n of NEIGHBORS[cellIdx]) {
     const nc = state.cells[n];
     if (nc.state === "revealed" && nc.value === "5") return 1;
   }
-  const neighbors = NEIGHBORS[cellIdx].filter(
-    (n) => state.cells[n].state === "hidden" && n !== cellIdx,
-  );
-  let pNone = 1;
-  for (const n of neighbors) {
-    const p = pFive.get(n) ?? 0;
-    pNone *= 1 - p;
+  if (!placements || placements.length === 0) return 0;
+  const neighSet = new Set(NEIGHBORS[cellIdx]);
+  let hits = 0;
+  for (const p of placements) {
+    for (const c of p) {
+      if (neighSet.has(c)) { hits += 1; break; }
+    }
   }
-  return 1 - pNone;
+  return hits / placements.length;
 }
 
 // How many bingo lines would flipping `cellIdx` (and getting it scored)
@@ -245,6 +278,35 @@ function bingoLinesCompletedBy(state, cellIdx) {
     if (othersDone) count += 1;
   }
   return count;
+}
+
+// Partial-line credit: for each incomplete bingo line containing `cellIdx`,
+// sum (donesOthers / 4)^2 where donesOthers = revealed-and-scored OTHER cells.
+// Squared so near-complete lines (3/4 done) dominate fresh ones (0/4 done).
+// Lines that this flip COMPLETES on its own are excluded — those are already
+// credited by `bingoLinesCompletedBy` × 10. Only counts cells that are
+// revealed AND scored, mirroring the game's bingo rule.
+function bingoLineProgress(state, cellIdx) {
+  let total = 0;
+  for (let i = 0; i < BINGO_LINES.length; i++) {
+    if (state.completedBingos.has(i)) continue;
+    const line = BINGO_LINES[i];
+    if (!line.includes(cellIdx)) continue;
+    let done = 0;
+    let othersHidden = 0;
+    for (const c of line) {
+      if (c === cellIdx) continue;
+      const cell = state.cells[c];
+      if (cell.state === "revealed" && cell.scored) done += 1;
+      else if (cell.state === "hidden") othersHidden += 1;
+    }
+    // If every other cell is already done, this flip completes the line —
+    // bingoLinesCompletedBy will credit it. Don't double-count.
+    if (othersHidden === 0 && done === 4) continue;
+    const ratio = done / 4;
+    total += ratio * ratio;
+  }
+  return total;
 }
 
 // Expected immediate value (points for this flip) of flipping `cellIdx`.
@@ -275,6 +337,7 @@ function probChainContinues(hand, distribution) {
 function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w) {
   const dist = distribution.get(cellIdx);
   const bingoBonus = bingoLinesCompletedBy(state, cellIdx) * 10;
+  const phase = phaseFor(state);
 
   if (hand === "K") {
     // Only value is catching the King.
@@ -288,15 +351,20 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w) {
 
   const ev = expectedImmediatePoints(hand, dist);
   const chainP = probChainContinues(hand, dist);
+  const bingoProgressW = pick(w, "bingoProgressWeight", phase);
+  const bingoProgressBonus = bingoProgressW
+    ? bingoLineProgress(state, cellIdx) * bingoProgressW
+    : 0;
   // Real Shannon info gain (bits) about the 5-placement, exact from the
   // constraint enumeration. When no placements are available (degenerate
   // states with no remaining 5s), fall back to the cell's own value entropy.
   const bits = placements && placements.length > 1
     ? infoGainAboutFives(cellIdx, placements)
     : valueUncertainty(dist);
-  const infoBonus = bits * w.infoWeight;
+  const infoBonus = bits * pick(w, "infoWeight", phase);
   const centerBias = -centerDistance(cellIdx) * w.centerTiebreak;
-  const spreadBonus = w.spreadWeight ? spreadCount(state, cellIdx) * w.spreadWeight : 0;
+  const spreadW = pick(w, "spreadWeight", phase);
+  const spreadBonus = spreadW ? spreadCount(state, cellIdx) * spreadW : 0;
   const pK = dist.K ?? 0;
   const p5 = dist[5] ?? 0;
   // Note: no penalty for revealing K early — the K-turn can still click the
@@ -306,7 +374,7 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w) {
   // reveal converts the K-turn from a probability-weighted guess into a
   // guaranteed +100. Weight scales with distance to the 550 target so it
   // dominates decisions when we actually need K to reach gold.
-  const kHuntBonus = hand !== "K" ? pK * kHuntWeight(state, w) : 0;
+  const kHuntBonus = hand !== "K" ? pK * kHuntWeight(state, w, phase) : 0;
 
   const remaining = state.remaining;
   const totalRemaining =
@@ -328,7 +396,7 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w) {
   // geometric sum, but high enough that chain-heavy flips (e.g. hand=4 on a
   // safe unsafe-for-5 cell) correctly beat a same-value catch that ends
   // the turn.
-  const chainBonus = chainP * avgPts * w.chainBonusMul;
+  const chainBonus = chainP * avgPts * pick(w, "chainBonusMul", phase);
 
   // A cell will almost certainly be captured during the 5-turn if it's either
   // already safe-for-5 (no catch risk) or a deduced 5 (player can flip it once
@@ -347,13 +415,13 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w) {
     // wait, so it stays on the "now" side. K-hunt bonus applies equally: the
     // 5-turn might not reach this cell before the K-turn begins, so revealing
     // K now is still a net gain.
-    score = ev - evLater + infoBonus + spreadBonus + centerBias - kPenalty + kHuntBonus;
-    detail = { ev, evLater, infoBonus, spreadBonus, kPenalty, kHuntBonus, reserved: true };
+    score = ev - evLater + infoBonus + spreadBonus + bingoProgressBonus + centerBias - kPenalty + kHuntBonus;
+    detail = { ev, evLater, infoBonus, spreadBonus, bingoProgressBonus, kPenalty, kHuntBonus, reserved: true };
   } else {
-    score = ev + chainBonus + bingoBonus + infoBonus + spreadBonus + centerBias - kPenalty + kHuntBonus;
-    detail = { ev, chainP, chainBonus, bingoBonus, infoBonus, spreadBonus, kPenalty, kHuntBonus };
+    score = ev + chainBonus + bingoBonus + bingoProgressBonus + infoBonus + spreadBonus + centerBias - kPenalty + kHuntBonus;
+    detail = { ev, chainP, chainBonus, bingoBonus, bingoProgressBonus, infoBonus, spreadBonus, kPenalty, kHuntBonus };
     if (hand === "5") {
-      const pCatch = probAnyNeighborIsFive(state, cellIdx, pFive);
+      const pCatch = probAnyNeighborIsFive(state, cellIdx, placements);
       score -= pCatch * w.catchPenalty;
       detail.pCatch = pCatch;
     }
