@@ -7,7 +7,9 @@ import {
   isTrivialSweep,
   NEIGHBORS,
   BOARD_COUNTS,
+  VALUES,
   fiveProbabilities,
+  cellValueDistribution,
 } from "./game.js";
 import { suggestMove } from "./solver.js";
 import { CHEST_THRESHOLDS, computeChestProbabilities } from "./simulate.js";
@@ -474,6 +476,25 @@ bindClick(boardEl, {
     if (cell.state === "revealed" && !cell.scored) {
       catchCell(state, idx);
       refresh();
+      return;
+    }
+    // Hidden cell — if its value is fully determined by the constraint
+    // network (P=1 for some value, e.g. a deduced must-be-5), accept the
+    // click as that reveal so the user doesn't have to hover-and-press a
+    // key for a forced fill. Cells with any uncertainty stay click-inert.
+    if (cell.state === "hidden") {
+      const dist = cellValueDistribution(state).get(idx);
+      if (!dist) return;
+      let bestV = null;
+      let bestP = 0;
+      for (const v of VALUES) {
+        const p = dist[v] ?? 0;
+        if (p > bestP) { bestP = p; bestV = v; }
+      }
+      if (bestV && bestP >= 0.999 && (state.remaining[bestV] ?? 0) > 0) {
+        recordReveal(state, idx, bestV, effectiveFlashed(idx, false));
+        refresh();
+      }
     }
   },
 });

@@ -360,7 +360,20 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
   // `options.forceFullOpener` is an offline benchmarking knob to disable
   // that early-exit and measure its contribution.
   const openerEarlyExit = !options.forceFullOpener && fivesFullyInformed(state);
-  if (hand === "1" && state.handIndex < OPENING_PATTERN.length && !openerEarlyExit) {
+  // If the user has revealed any cell that ISN'T part of the opener, they've
+  // already deviated — drop the opener entirely and let the heuristic pick.
+  // The pattern only pays off as a coordinated multi-flip; finishing the
+  // remaining opener cells out of context loses the property that makes it
+  // good. Recomputed each call so undo restores opener mode automatically.
+  const openerDeviated = state.cells.some(
+    (c, i) => c.state === "revealed" && !OPENING_PATTERN.includes(i),
+  );
+  if (
+    hand === "1" &&
+    state.handIndex < OPENING_PATTERN.length &&
+    !openerEarlyExit &&
+    !openerDeviated
+  ) {
     for (const idx of OPENING_PATTERN) {
       if (state.cells[idx].state === "hidden") {
         return {
