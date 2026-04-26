@@ -55,10 +55,8 @@ export function renderBoard(boardEl) {
 }
 
 export function updateBoard(boardEl, state, suggestion) {
-  const { mustNotBe5, constraints } = deriveConstraints(state);
+  const { mustNotBe5 } = deriveConstraints(state);
   const pFive = fiveProbabilities(state);
-  const constrainedCells = new Set();
-  for (const cons of constraints) for (const c of cons) constrainedCells.add(c);
   // Free-cash easter egg: when every remaining hidden cell is either safe-for-5
   // or a deduced 5, the player can just sweep. Stamp each green cell with a
   // tiny money-eyes face.
@@ -100,9 +98,10 @@ export function updateBoard(boardEl, state, suggestion) {
       el.classList.add("must5");
       el.dataset.value = "5";
       el.textContent = "5";
-    } else if (constrainedCells.has(i) && !ruledOut) {
-      // Cell is an adjacency candidate for a flash AND enumeration hasn't ruled
-      // it out — i.e. the 5 really could be here.
+    } else if (!ruledOut && p > 0.001) {
+      // Any non-zero P(5) gets the red tint — even cells that aren't in a
+      // flash-constraint set (e.g. before any flash signal exists). The whole
+      // point is "could be a 5", which we already model in p.
       el.classList.add("possible5");
     } else if (ruledOut || mustNotBe5.has(i)) {
       // Either explicitly mustNotBe5 (from a no-flash reveal) or ruled out via
