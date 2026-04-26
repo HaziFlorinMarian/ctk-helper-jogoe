@@ -88,14 +88,13 @@ const STRINGS = {
     impressumTitle: "Imprint",
     impressumBody:
       "<p>Information per §5 TMG / §18 MStV:</p>" +
-      "<p><b>[Vor- und Nachname]</b><br>" +
-        "[Straße + Hausnummer]<br>" +
-        "[PLZ + Ort]<br>" +
-        "Germany</p>" +
+      "<p><b>Dominik Löffler</b><br>" +
+        "Roseggerstraße 21<br>" +
+        "4020 Linz<br>" +
+        "Österreich</p>" +
       "<p>Contact: discord <code>@jogoe</code></p>" +
       "<p>Responsible for content per §18 (2) MStV: same as above.</p>" +
-      "<p><i>Disclaimer:</i> Despite careful editorial control, no liability is accepted for the content of external links. The operators of those linked pages are solely responsible for their content.</p>" +
-      "<p class='legal-todo'><b>TODO:</b> replace the bracketed fields with your real name and address before the page goes public — German law requires them on any regularly accessible site.</p>",
+      "<p><i>Disclaimer:</i> Despite careful editorial control, no liability is accepted for the content of external links. The operators of those linked pages are solely responsible for their content.</p>",
     datenschutzTitle: "Privacy policy",
     datenschutzBody:
       "<p><b>1. Controller</b><br>See Imprint.</p>" +
