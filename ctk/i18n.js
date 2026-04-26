@@ -109,9 +109,7 @@ const STRINGS = {
       "</ul>" +
       "<p><b>4. Public counters (abacus.jasoncameron.dev)</b><br>For the like button, the page-open counter, and the global games/gold/silver/bronze tally, the site sends HTTP requests to a free public counter service. The provider may process IP addresses while serving these requests. Legal basis: legitimate interest (Art. 6 (1) lit. f GDPR) in basic usage statistics.</p>" +
       "<p><b>5. Twitch chat</b><br>The Twitch-chat embed is loaded only after you explicitly click the consent button. Once loaded, Twitch (Twitch Interactive Inc., 350 Bush Street, San Francisco, CA 94104, USA) processes your IP address, may set cookies, and integrates with your Twitch account if you're logged in. " +
-        "Twitch privacy notice: <a href='https://www.twitch.tv/p/legal/privacy-notice/' target='_blank' rel='noopener'>twitch.tv/p/legal/privacy-notice</a>. Legal basis for loading: your explicit consent (Art. 6 (1) lit. a GDPR), revocable any time below.</p>" +
-      "<p><b>6. Your rights</b><br>You can request access to, rectification of, or erasure of any personal data we process, restrict or object to processing, or lodge a complaint with a supervisory authority. Contact via the imprint.</p>" +
-      "<p class='legal-todo'><b>TODO:</b> a real privacy policy for German jurisdiction should be reviewed by a lawyer or generated via a vetted German tool (e-recht24.de, datenschutz-generator.de). The text above is a starting draft, not legal advice.</p>",
+        "Twitch privacy notice: <a href='https://www.twitch.tv/p/legal/privacy-notice/' target='_blank' rel='noopener'>twitch.tv/p/legal/privacy-notice</a>. Legal basis for loading: your explicit consent (Art. 6 (1) lit. a GDPR), revocable any time below.</p>",
     revokeTwitchConsent: "Revoke Twitch-chat consent",
     twitchConsentBody:
       "<b>Loading the Twitch chat sends your IP and cookies to Twitch.</b> By clicking below you consent to that connection (revocable in the privacy policy).",
