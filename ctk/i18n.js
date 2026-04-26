@@ -83,6 +83,41 @@ const STRINGS = {
       "<p>To play optimally we'd need the best response for every game state we could ever face. The board is a permutation of 25 cards — there are <b>25!&nbsp;≈&nbsp;1.55&nbsp;×&nbsp;10²⁵</b> orderings.</p>" +
       "<p>Even storing one byte per arrangement would need around <b>15 yottabytes</b> — roughly <b>50–75× the world's total digital storage</b> as of 2024. A real perfect solver would need many bytes per state (best move, expected score, sub-tree value), so the gap is far worse.</p>" +
       "<p>We measured a separate <em>perfect-information ceiling</em> with a solver that already knows the board layout but still has to obey the turn order. That ceiling is around <b>98% gold</b>. So the rules aren't what cap us at 42% — the gap is decision-making under uncertainty.</p>",
+    impressum: "Imprint",
+    privacy: "Privacy",
+    impressumTitle: "Imprint",
+    impressumBody:
+      "<p>Information per §5 TMG / §18 MStV:</p>" +
+      "<p><b>[Vor- und Nachname]</b><br>" +
+        "[Straße + Hausnummer]<br>" +
+        "[PLZ + Ort]<br>" +
+        "Germany</p>" +
+      "<p>Contact: discord <code>@jogoe</code></p>" +
+      "<p>Responsible for content per §18 (2) MStV: same as above.</p>" +
+      "<p><i>Disclaimer:</i> Despite careful editorial control, no liability is accepted for the content of external links. The operators of those linked pages are solely responsible for their content.</p>" +
+      "<p class='legal-todo'><b>TODO:</b> replace the bracketed fields with your real name and address before the page goes public — German law requires them on any regularly accessible site.</p>",
+    datenschutzTitle: "Privacy policy",
+    datenschutzBody:
+      "<p><b>1. Controller</b><br>See Imprint.</p>" +
+      "<p><b>2. Hosting (GitHub Pages)</b><br>This site is hosted on GitHub Pages (GitHub, Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA). GitHub processes visitors' IP addresses in server logs as part of operating the service. " +
+        "Privacy statement: <a href='https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement' target='_blank' rel='noopener'>docs.github.com</a>.</p>" +
+      "<p><b>3. Local storage</b><br>The following is stored only in your browser (localStorage), never sent to us:</p>" +
+      "<ul>" +
+        "<li>Language preference (EN/DE)</li>" +
+        "<li>Session statistics (games played, gold/silver/bronze)</li>" +
+        "<li>UI preferences (mute, minimal UI, chat hidden)</li>" +
+        "<li>Like state, Twitch-chat consent flag</li>" +
+      "</ul>" +
+      "<p><b>4. Public counters (abacus.jasoncameron.dev)</b><br>For the like button, the page-open counter, and the global games/gold/silver/bronze tally, the site sends HTTP requests to a free public counter service. The provider may process IP addresses while serving these requests. Legal basis: legitimate interest (Art. 6 (1) lit. f GDPR) in basic usage statistics.</p>" +
+      "<p><b>5. Twitch chat</b><br>The Twitch-chat embed is loaded only after you explicitly click the consent button. Once loaded, Twitch (Twitch Interactive Inc., 350 Bush Street, San Francisco, CA 94104, USA) processes your IP address, may set cookies, and integrates with your Twitch account if you're logged in. " +
+        "Twitch privacy notice: <a href='https://www.twitch.tv/p/legal/privacy-notice/' target='_blank' rel='noopener'>twitch.tv/p/legal/privacy-notice</a>. Legal basis for loading: your explicit consent (Art. 6 (1) lit. a GDPR), revocable any time below.</p>" +
+      "<p><b>6. Your rights</b><br>You can request access to, rectification of, or erasure of any personal data we process, restrict or object to processing, or lodge a complaint with a supervisory authority. Contact via the imprint.</p>" +
+      "<p class='legal-todo'><b>TODO:</b> a real privacy policy for German jurisdiction should be reviewed by a lawyer or generated via a vetted German tool (e-recht24.de, datenschutz-generator.de). The text above is a starting draft, not legal advice.</p>",
+    revokeTwitchConsent: "Revoke Twitch-chat consent",
+    twitchConsentBody:
+      "<b>Loading the Twitch chat sends your IP and cookies to Twitch.</b> By clicking below you consent to that connection (revocable in the privacy policy).",
+    twitchConsentBtn: "Load Twitch chat",
+    twitchConsentRevoked: "Twitch-chat consent revoked. Reload to apply.",
     // ----- footer -----
     footerText: "Clean-room helper for Metin2 · Schnapp den König",
     // ----- ui.js dynamic -----
@@ -191,6 +226,39 @@ const STRINGS = {
       "<p>Um optimal zu spielen, bräuchten wir die beste Antwort für jeden möglichen Spielzustand. Das Brett ist eine Permutation von 25 Karten — es gibt <b>25!&nbsp;≈&nbsp;1,55&nbsp;×&nbsp;10²⁵</b> Anordnungen.</p>" +
       "<p>Selbst nur ein Byte pro Anordnung wären rund <b>15 Yottabyte</b> — etwa <b>das 50- bis 75-fache des gesamten weltweiten digitalen Speichers</b> (Stand 2024). Ein echter perfekter Solver bräuchte viele Bytes pro Zustand (beste Aktion, erwarteter Score, Wert des Teilbaums), die Lücke wäre also noch dramatischer.</p>" +
       "<p>Eine separate <em>Perfekt-Information-Decke</em> haben wir mit einem Solver gemessen, der das Layout des Bretts kennt, aber weiterhin der Zugreihenfolge folgen muss. Die liegt bei rund <b>98% Gold</b>. Es sind also nicht die Spielregeln, die uns auf 42% deckeln — es ist die Entscheidung unter Unsicherheit.</p>",
+    impressum: "Impressum",
+    privacy: "Datenschutz",
+    impressumTitle: "Impressum",
+    impressumBody:
+      "<p>Angaben gemäß §5 TMG / §18 MStV:</p>" +
+      "<p><b>Dominik Löffler</b><br>" +
+        "Roseggerstraße 21<br>" +
+        "4020 Linz<br>" +
+        "Österreich</p>" +
+      "<p>Kontakt: Discord <code>@jogoe</code></p>" +
+      "<p>Verantwortlich für den Inhalt nach §18 Abs. 2 MStV: siehe oben.</p>" +
+      "<p><i>Haftungsausschluss:</i> Trotz sorgfältiger inhaltlicher Kontrolle übernehmen wir keine Haftung für die Inhalte externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich.</p>" +
+      "<p class='legal-todo'><b>TODO:</b> Vor Veröffentlichung Name und Anschrift in den Klammerfeldern eintragen — gesetzlich vorgeschrieben für jede regelmäßig zugängliche Seite eines deutschen Betreibers.</p>",
+    datenschutzTitle: "Datenschutzerklärung",
+    datenschutzBody:
+      "<p><b>1. Verantwortlicher</b><br>Siehe Impressum.</p>" +
+      "<p><b>2. Hosting (GitHub Pages)</b><br>Diese Seite wird auf GitHub Pages gehostet (GitHub, Inc., 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA). GitHub verarbeitet beim Aufruf der Seite IP-Adressen der Besucher in Server-Logs. " +
+        "Datenschutzerklärung: <a href='https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement' target='_blank' rel='noopener'>docs.github.com</a>.</p>" +
+      "<p><b>3. Lokale Speicherung</b><br>Folgende Daten werden ausschließlich in deinem Browser (localStorage) gespeichert und nicht an uns übertragen:</p>" +
+      "<ul>" +
+        "<li>Sprachauswahl (EN/DE)</li>" +
+        "<li>Sitzungs-Statistiken (gespielte Spiele, Gold/Silber/Bronze)</li>" +
+        "<li>UI-Präferenzen (Stumm, Minimal-UI, Chat ausgeblendet)</li>" +
+        "<li>Like-Status, Twitch-Chat-Einwilligung</li>" +
+      "</ul>" +
+      "<p><b>4. Öffentliche Zähler (abacus.jasoncameron.dev)</b><br>Für den Like-Button, den Seitenaufruf-Zähler und die globale Spiel-Statistik (Gold/Silber/Bronze) sendet die Seite HTTP-Anfragen an einen kostenlosen öffentlichen Zähldienst. Der Anbieter kann dabei IP-Adressen verarbeiten. Rechtsgrundlage: berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO) an einfacher Nutzungsstatistik.</p>" +
+      "<p><b>5. Twitch-Chat</b><br>Der Twitch-Chat wird ausschließlich nach deiner ausdrücklichen Einwilligung geladen. Sobald geladen, verarbeitet Twitch (Twitch Interactive Inc., 350 Bush Street, San Francisco, CA 94104, USA) deine IP-Adresse, kann Cookies setzen und integriert sich mit deinem Twitch-Konto, falls du eingeloggt bist. " +
+        "Twitch-Datenschutzhinweis: <a href='https://www.twitch.tv/p/legal/privacy-notice/' target='_blank' rel='noopener'>twitch.tv/p/legal/privacy-notice</a>. Rechtsgrundlage für das Laden: deine ausdrückliche Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), unten jederzeit widerrufbar.</p>",
+    revokeTwitchConsent: "Twitch-Chat-Einwilligung widerrufen",
+    twitchConsentBody:
+      "<b>Beim Laden des Twitch-Chats werden deine IP und Cookies an Twitch übertragen.</b> Mit Klick unten willigst du dieser Verbindung zu (in der Datenschutzerklärung jederzeit widerrufbar).",
+    twitchConsentBtn: "Twitch-Chat laden",
+    twitchConsentRevoked: "Twitch-Chat-Einwilligung widerrufen. Bitte Seite neu laden.",
     // ----- Fußzeile -----
     footerText: "Clean-Room-Helfer für Metin2 · Schnapp den König",
     // ----- ui.js dynamisch -----

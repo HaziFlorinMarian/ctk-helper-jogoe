@@ -909,3 +909,66 @@ body.chat-hidden .chat-tab-arrow {
   transition: background 100ms ease, color 100ms ease;
 }
 .modal-close:hover { background: var(--bg-3); color: var(--fg); }
+
+/* Footer legal links — visually identical to a small text link, but they're
+   <button>s under the hood so they can open a modal without changing the URL. */
+.footer-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--fg-dim);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.footer-link:hover { color: var(--fg); }
+.footer-sep { color: var(--fg-dim); margin: 0 4px; opacity: 0.6; }
+
+/* Twitch consent placeholder — replaces the iframe until the user opts in.
+   Centered, dark, with a clear "what happens" explanation. */
+.twitch-consent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 18px;
+  color: var(--fg-dim);
+  background: var(--bg-3);
+}
+.twitch-consent p {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg);
+}
+.twitch-consent .action-btn {
+  background: #9146ff;
+  border-color: #9146ff;
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 20px;
+  width: auto;
+  flex: 0 0 auto;
+}
+.twitch-consent .action-btn:hover { background: #772ce8; border-color: #772ce8; }
+
+/* Legal modals — small extras to highlight TODO blocks and the revoke row. */
+.legal-todo {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--warn);
+  background: rgba(242, 153, 74, 0.08);
+  font-size: 12px;
+  color: var(--fg-dim);
+  border-radius: 0 6px 6px 0;
+}
+.datenschutz-controls {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.datenschutz-controls .action-btn { width: auto; padding: 8px 14px; }

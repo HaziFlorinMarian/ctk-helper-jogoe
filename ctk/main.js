@@ -61,13 +61,16 @@ const els = {
   twitchChatMount: document.getElementById("twitchChatMount"),
 };
 
-// ---------- twitch chat embed ----------
-// Twitch's chat iframe requires the `parent` query param to match the hosting
-// hostname (multiple `parent` params allowed). location.hostname covers both
-// production (your github.io) and local file/dev hosts; we add localhost too
-// so opening index.html via a local server still works.
-function mountTwitchChat() {
+// ---------- twitch chat embed (consent-gated) ----------
+// Twitch's chat iframe sets cookies and ships IP+session data to Twitch. To
+// stay on the right side of GDPR/TTDSG we never load it without explicit
+// user opt-in. The consent flag is persisted in localStorage; a Revoke
+// button in the privacy modal clears it.
+const TWITCH_CONSENT_KEY = "ctk-twitch-consent-v1";
+function mountTwitchIframe() {
   if (!els.twitchChatMount) return;
+  // Replace the placeholder with the real iframe.
+  els.twitchChatMount.innerHTML = "";
   const host = location.hostname || "localhost";
   const parents = new Set([host, "localhost", "127.0.0.1"]);
   const parentParams = [...parents].map((p) => `parent=${encodeURIComponent(p)}`).join("&");
@@ -77,7 +80,28 @@ function mountTwitchChat() {
   iframe.allow = "autoplay; encrypted-media";
   els.twitchChatMount.appendChild(iframe);
 }
-mountTwitchChat();
+function bootTwitchChat() {
+  if (localStorage.getItem(TWITCH_CONSENT_KEY) === "1") {
+    mountTwitchIframe();
+    return;
+  }
+  // Wire the consent button (rendered in the placeholder template).
+  const btn = document.getElementById("twitchConsentBtn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      localStorage.setItem(TWITCH_CONSENT_KEY, "1");
+      mountTwitchIframe();
+    });
+  }
+}
+bootTwitchChat();
+const revokeBtn = document.getElementById("revokeTwitchConsentBtn");
+if (revokeBtn) {
+  revokeBtn.addEventListener("click", () => {
+    localStorage.removeItem(TWITCH_CONSENT_KEY);
+    showToast(t("twitchConsentRevoked"));
+  });
+}
 
 // ---------- header toggles ----------
 // Two simple sticky toggles persisted in localStorage:
@@ -125,28 +149,34 @@ if (els.chatBtn) {
   });
 }
 
-// ---------- about modal ----------
-const aboutBtn = document.getElementById("aboutBtn");
-const aboutModal = document.getElementById("aboutModal");
-function openAbout() {
-  if (!aboutModal) return;
-  aboutModal.hidden = false;
-  // Push focus into the dialog so Esc / Tab work as expected.
-  const card = aboutModal.querySelector(".modal-card");
+// ---------- modals (about, impressum, datenschutz) ----------
+// Generic open/close: any element with [data-open-modal="<id>"] opens that
+// modal; any descendant with [data-close] inside a modal dismisses it; Esc
+// closes any open modal.
+function openModal(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
+  m.hidden = false;
+  const card = m.querySelector(".modal-card");
   if (card) card.focus();
 }
-function closeAbout() {
-  if (aboutModal) aboutModal.hidden = true;
+function closeModal(m) {
+  if (m) m.hidden = true;
 }
-if (aboutBtn) aboutBtn.addEventListener("click", openAbout);
-if (aboutModal) {
-  aboutModal.addEventListener("click", (e) => {
-    if (e.target instanceof Element && e.target.hasAttribute("data-close")) closeAbout();
-  });
-}
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && aboutModal && !aboutModal.hidden) closeAbout();
+document.querySelectorAll("[data-open-modal]").forEach((el) => {
+  el.addEventListener("click", () => openModal(el.getAttribute("data-open-modal")));
 });
+document.querySelectorAll(".modal").forEach((m) => {
+  m.addEventListener("click", (e) => {
+    if (e.target instanceof Element && e.target.hasAttribute("data-close")) closeModal(m);
+  });
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  document.querySelectorAll(".modal:not([hidden])").forEach((m) => closeModal(m));
+});
+const aboutBtn = document.getElementById("aboutBtn");
+if (aboutBtn) aboutBtn.addEventListener("click", () => openModal("aboutModal"));
 
 // ---------- like button (free public counter API) ----------
 // abacus.jasoncameron.dev hosts a stateless counter. /get returns the value;

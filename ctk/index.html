@@ -175,13 +175,22 @@
       <div class="label">
         <span data-i18n="twitchChat">Chat</span>
       </div>
-      <div id="twitchChatMount" class="twitch-chat-mount"></div>
+      <div id="twitchChatMount" class="twitch-chat-mount">
+        <div id="twitchConsent" class="twitch-consent">
+          <p data-i18n-html="twitchConsentBody"></p>
+          <button id="twitchConsentBtn" type="button" class="action-btn" data-i18n="twitchConsentBtn">Load Twitch chat</button>
+        </div>
+      </div>
     </div>
   </aside>
   </div>
 
   <footer>
     <span class="subtle" data-i18n="footerText">Clean-room helper for Metin2 &middot; Schnapp den K&ouml;nig</span>
+    <span class="footer-sep">&middot;</span>
+    <button class="footer-link" type="button" data-open-modal="impressumModal" data-i18n="impressum">Impressum</button>
+    <span class="footer-sep">&middot;</span>
+    <button class="footer-link" type="button" data-open-modal="datenschutzModal" data-i18n="privacy">Privacy</button>
   </footer>
 
   <button id="chatBtn" class="chat-tab" type="button" aria-label="Toggle chat" title="Toggle chat">
@@ -205,6 +214,27 @@
 
       <h3 data-i18n="aboutLimitsHeading">Why we can't be perfect</h3>
       <div data-i18n-html="aboutLimitsBody"></div>
+    </div>
+  </div>
+
+  <div id="impressumModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="impressumTitle" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" tabindex="-1">
+      <button class="modal-close" type="button" aria-label="Close" data-close>&times;</button>
+      <h2 id="impressumTitle" data-i18n="impressumTitle">Impressum</h2>
+      <div data-i18n-html="impressumBody"></div>
+    </div>
+  </div>
+
+  <div id="datenschutzModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="datenschutzTitle" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" tabindex="-1">
+      <button class="modal-close" type="button" aria-label="Close" data-close>&times;</button>
+      <h2 id="datenschutzTitle" data-i18n="datenschutzTitle">Datenschutzerklärung</h2>
+      <div data-i18n-html="datenschutzBody"></div>
+      <div class="datenschutz-controls">
+        <button id="revokeTwitchConsentBtn" type="button" class="action-btn" data-i18n="revokeTwitchConsent">Revoke Twitch chat consent</button>
+      </div>
     </div>
   </div>
 
