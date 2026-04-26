@@ -55,6 +55,8 @@ const els = {
   globalPctGold: document.getElementById("globalPctGold"),
   globalPctSilver: document.getElementById("globalPctSilver"),
   globalPctBronze: document.getElementById("globalPctBronze"),
+  sessionRate: document.getElementById("sessionRate"),
+  globalRate: document.getElementById("globalRate"),
   muteBtn: document.getElementById("muteBtn"),
   minimalUiBtn: document.getElementById("minimalUiBtn"),
   chatBtn: document.getElementById("chatBtn"),
@@ -237,22 +239,104 @@ if (els.likeBtn) {
 // game completes locally. Like the like button: 404 → 0, network errors are
 // silently swallowed so the page never breaks.
 const GLOBAL_KEYS = ["games", "gold", "silver", "bronze"];
+// `globalCounts` is the latest fetched truth from abacus.
+// `displayedCounts` is what's shown — it lags `globalCounts` and rises in
+// random ticks toward it, so the user sees a steady, lottery-style climb
+// instead of a jump every 20s.
 const globalCounts = { games: null, gold: null, silver: null, bronze: null };
+const displayedCounts = { games: null, gold: null, silver: null, bronze: null };
+const pendingIncrements = { games: [], gold: [], silver: [], bronze: [] };
+const ANIMATION_WINDOW_MS = 5_000;
+
+// Rolling history of {t, games} samples used to compute games/hour. Tracks the
+// REAL fetched values (not the animated display) so the rate reflects truth.
+const GLOBAL_HISTORY_MS = 30 * 60 * 1000;
+const globalGamesHistory = [];
+function pushGlobalSample() {
+  if (!Number.isFinite(globalCounts.games)) return;
+  const now = Date.now();
+  globalGamesHistory.push({ t: now, games: globalCounts.games });
+  while (globalGamesHistory.length > 0 && now - globalGamesHistory[0].t > GLOBAL_HISTORY_MS) {
+    globalGamesHistory.shift();
+  }
+}
+
+// When a fresh fetch arrives, schedule a random tick timestamp for each unit
+// delta within the next animation window. The 1s render tick advances the
+// displayed value past whichever timestamps have elapsed.
+function scheduleAnimations() {
+  const now = Date.now();
+  for (const k of GLOBAL_KEYS) {
+    const target = globalCounts[k];
+    if (target == null) continue;
+    if (displayedCounts[k] == null) {
+      // First fetch — snap, no animation. Otherwise the page would slowly
+      // count up from 0 on every reload, which is just confusing.
+      displayedCounts[k] = target;
+      pendingIncrements[k] = [];
+      continue;
+    }
+    const delta = target - displayedCounts[k] - pendingIncrements[k].length;
+    if (delta <= 0) continue;
+    const schedule = [];
+    for (let i = 0; i < delta; i++) schedule.push(now + Math.random() * ANIMATION_WINDOW_MS);
+    schedule.sort((a, b) => a - b);
+    pendingIncrements[k].push(...schedule);
+    pendingIncrements[k].sort((a, b) => a - b);
+  }
+}
+
+// Advance displayedCounts past every scheduled tick that's now in the past.
+function tickAnimations() {
+  const now = Date.now();
+  for (const k of GLOBAL_KEYS) {
+    const sched = pendingIncrements[k];
+    while (sched.length > 0 && sched[0] <= now) {
+      sched.shift();
+      displayedCounts[k] = (displayedCounts[k] ?? 0) + 1;
+    }
+  }
+}
+
 function renderGlobalStats() {
-  const g = globalCounts;
+  const d = displayedCounts;
   const fmt = (v) => v == null ? "…" : String(v);
-  els.globalGames.textContent = fmt(g.games);
-  els.globalGold.textContent = fmt(g.gold);
-  els.globalSilver.textContent = fmt(g.silver);
-  els.globalBronze.textContent = fmt(g.bronze);
-  const pct = (n) => (g.games && n != null ? `(${Math.round((n / g.games) * 100)}%)` : "");
-  els.globalPctGold.textContent = pct(g.gold);
-  els.globalPctSilver.textContent = pct(g.silver);
-  els.globalPctBronze.textContent = pct(g.bronze);
+  els.globalGames.textContent = fmt(d.games);
+  els.globalGold.textContent = fmt(d.gold);
+  els.globalSilver.textContent = fmt(d.silver);
+  els.globalBronze.textContent = fmt(d.bronze);
+  const pct = (n) => (d.games && n != null ? `(${Math.round((n / d.games) * 100)}%)` : "");
+  els.globalPctGold.textContent = pct(d.gold);
+  els.globalPctSilver.textContent = pct(d.silver);
+  els.globalPctBronze.textContent = pct(d.bronze);
+  if (els.globalRate && globalGamesHistory.length >= 2) {
+    const oldest = globalGamesHistory[0];
+    const newest = globalGamesHistory[globalGamesHistory.length - 1];
+    els.globalRate.textContent = formatRate(newest.games - oldest.games, newest.t - oldest.t);
+  } else if (els.globalRate) {
+    els.globalRate.textContent = "";
+  }
+}
+// Earliest allowed time for the next poll. Bumped forward when abacus tells
+// us we're near (or over) the rate-limit ceiling via response headers.
+let nextPollAt = 0;
+function consumeRateLimitHeaders(r) {
+  const remaining = parseInt(r.headers.get("RateLimit-Remaining") ?? "", 10);
+  // Only stall if we're about to hit zero. Below 4 → wait until the window
+  // resets. Above that, normal cadence.
+  if (Number.isFinite(remaining) && remaining < 4) {
+    const reset = parseInt(r.headers.get("RateLimit-Reset") ?? "", 10);
+    if (Number.isFinite(reset)) nextPollAt = Math.max(nextPollAt, reset * 1000);
+  }
+  if (r.status === 429) {
+    const retryAfterMs = parseInt(r.headers.get("Retry-After") ?? "10000", 10);
+    nextPollAt = Math.max(nextPollAt, Date.now() + (Number.isFinite(retryAfterMs) ? retryAfterMs : 10_000));
+  }
 }
 async function fetchGlobalCount(key) {
   try {
     const r = await fetch(`${LIKE_BASE}/get/${LIKE_NS}/${key}`);
+    consumeRateLimitHeaders(r);
     if (r.status === 404) return 0;
     if (!r.ok) return null;
     const data = await r.json();
@@ -264,15 +348,21 @@ async function fetchAllGlobalCounts() {
   for (let i = 0; i < GLOBAL_KEYS.length; i++) {
     if (results[i] != null) globalCounts[GLOBAL_KEYS[i]] = results[i];
   }
+  pushGlobalSample();
+  scheduleAnimations();
   renderGlobalStats();
 }
 async function hitGlobal(key) {
   try {
     const r = await fetch(`${LIKE_BASE}/hit/${LIKE_NS}/${key}`);
+    consumeRateLimitHeaders(r);
     if (!r.ok) return;
     const data = await r.json();
     if (Number.isFinite(data.value)) {
       globalCounts[key] = data.value;
+      // Local hit — snap immediately so the user sees their own action reflected
+      // in the panel without waiting for the next animation tick.
+      displayedCounts[key] = data.value;
       renderGlobalStats();
     }
   } catch { /* swallow */ }
@@ -284,7 +374,31 @@ function recordGlobalCompletion(score) {
   else if (score >= CHEST_THRESHOLDS.silver) hitGlobal("silver");
   else if (score >= CHEST_THRESHOLDS.bronze) hitGlobal("bronze");
 }
+// Network polling: every 5s steady state (4 GETs / 5s = 8 per 10s window;
+// abacus's limit is 30 per 10s per IP, comfortable headroom for bursts).
+// Recursive setTimeout instead of setInterval so we can defer the next poll
+// when the response headers tell us we're approaching the rate-limit window.
+const GLOBAL_POLL_MS = 5_000;
+function schedulePoll() {
+  const wait = Math.max(GLOBAL_POLL_MS, nextPollAt - Date.now());
+  setTimeout(async () => {
+    if (document.visibilityState === "visible") {
+      await fetchAllGlobalCounts();
+    }
+    schedulePoll();
+  }, wait);
+}
 fetchAllGlobalCounts();
+schedulePoll();
+// UI re-render: every 1s. Local-only — advances scheduled global-counter
+// animation ticks and re-renders both panels so the games/hour reading and
+// the lottery-style global counters keep pace with wall-clock time.
+setInterval(() => {
+  if (document.visibilityState !== "visible") return;
+  tickAnimations();
+  renderSessionStats();
+  renderGlobalStats();
+}, 1000);
 
 // ---------- page-open counter ----------
 // Bumped once per page load. Shown next to the version line. We don't dedup
@@ -346,6 +460,27 @@ let lastGameOver = false;
 // Session stats persist across reloads via localStorage so refreshing the
 // page doesn't wipe out a streak.
 const SESSION_KEY = "ctk-session-stats-v1";
+const SESSION_STARTED_KEY = "ctk-session-started-v1";
+
+// Format a games-per-hour rate. Returns "" until enough time/data has
+// accumulated for a meaningful number — small samples produce wild rates.
+function formatRate(games, elapsedMs) {
+  if (!games || !elapsedMs || elapsedMs < 60_000) return "";
+  const perHour = games / (elapsedMs / 3_600_000);
+  if (!Number.isFinite(perHour)) return "";
+  return perHour >= 10 ? `(${perHour.toFixed(0)}/hr)` : `(${perHour.toFixed(1)}/hr)`;
+}
+
+function getSessionStart() {
+  const raw = localStorage.getItem(SESSION_STARTED_KEY);
+  return raw ? Number(raw) : 0;
+}
+function setSessionStart(ts) {
+  try { localStorage.setItem(SESSION_STARTED_KEY, String(ts)); } catch (e) { /* ignored */ }
+}
+function clearSessionStart() {
+  try { localStorage.removeItem(SESSION_STARTED_KEY); } catch (e) { /* ignored */ }
+}
 
 function loadSessionStats() {
   try {
@@ -372,6 +507,10 @@ function renderSessionStats() {
   els.sessionPctGold.textContent = pct(s.gold);
   els.sessionPctSilver.textContent = pct(s.silver);
   els.sessionPctBronze.textContent = pct(s.bronze);
+  if (els.sessionRate) {
+    const start = getSessionStart();
+    els.sessionRate.textContent = start ? formatRate(s.games, Date.now() - start) : "";
+  }
 }
 
 function recordGameCompletion(score) {
@@ -383,6 +522,9 @@ function recordGameCompletion(score) {
   else if (score >= CHEST_THRESHOLDS.silver) s.silver += 1;
   else if (score >= CHEST_THRESHOLDS.bronze) s.bronze += 1;
   saveSessionStats(s);
+  // Stamp the session-start timestamp on the first completed game so the
+  // games/hour rate is anchored to actual play, not page-open time.
+  if (s.games === 1 && !getSessionStart()) setSessionStart(Date.now());
   renderSessionStats();
   recordGlobalCompletion(score);
 }
@@ -428,6 +570,7 @@ function flushAbandonedGame() {
   else if (tier === "silver") s.silver += 1;
   else if (tier === "bronze") s.bronze += 1;
   saveSessionStats(s);
+  if (s.games === 1 && !getSessionStart()) setSessionStart(Date.now());
   renderSessionStats();
 
   // Global — same shape, via the abacus counters.
@@ -585,6 +728,7 @@ els.undoBtn.addEventListener("click", () => {
 
 els.sessionResetBtn.addEventListener("click", () => {
   saveSessionStats({ games: 0, gold: 0, silver: 0, bronze: 0 });
+  clearSessionStart();
   renderSessionStats();
 });
 

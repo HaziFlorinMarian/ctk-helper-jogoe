@@ -13,6 +13,7 @@ import {
   HAND_SEQUENCE,
   cellValueDistribution,
   fiveProbabilities,
+  enumerate5Placements,
   hiddenCells,
   currentCard,
   pointsFor,
@@ -54,7 +55,7 @@ const OPENING_PATTERN = [1, 3, 16, 18];
 // wins — both came in well below the game's optimum.
 export const DEFAULT_WEIGHTS = {
   catchPenalty: 612,      // hand=5 catch-risk aversion (× P(any 5 adjacent))
-  infoWeight: 2.89,       // scales flash-info contribution per hidden neighbour
+  infoWeight: 20,         // multiplier on Shannon info gain (bits) about the 5-placement
   centerTiebreak: 0.037,  // microscopic bias toward the grid centre
   chainBonusMul: 1.94,    // multiplier on the chain-continuation expected value
   kHuntBase: 150,         // K-hunt weight when score already near target
@@ -143,6 +144,7 @@ function spreadCount(state, cellIdx) {
 
 // Uncertainty of a cell's value as a ratio in [0, 1]. A must-be-5 or must-be-X
 // cell returns 0 (no information to learn). A uniform distribution returns 1.
+// Kept as a fallback for edge cases (no enumerated placements available).
 function valueUncertainty(dist) {
   const maxH = Math.log2(VALUES.length);
   let h = 0;
@@ -151,6 +153,43 @@ function valueUncertainty(dist) {
     if (p > 0) h -= p * Math.log2(p);
   }
   return h / maxH;
+}
+
+// Shannon information gain (in bits) about the 5-placement from revealing
+// `cellIdx`, computed exactly from the constraint enumeration. Replaces the
+// hand-crafted "uncertainty × (1 + flashInfo × w)" proxy.
+//
+// Outcome partition for a reveal of c:
+//   A: c is itself a 5            → posterior = placements containing c
+//   B: c is non-5, no flash       → posterior = placements with no neighbour of c being a 5
+//   C: c is non-5, with flash     → posterior = placements with c absent but ≥1 neighbour present
+// Probabilities = |A|/|P|, |B|/|P|, |C|/|P| (uniform-prior over enumerated worlds).
+//   InfoGain = H(prior) − Σ p_outcome × H(posterior_outcome)
+function infoGainAboutFives(cellIdx, placements) {
+  const total = placements.length;
+  if (total <= 1) return 0;
+  const neighSet = new Set(NEIGHBORS[cellIdx]);
+  let inCell = 0;
+  let notInNoFlash = 0;
+  let notInFlash = 0;
+  for (const p of placements) {
+    let cellHas = false;
+    let neighHas = false;
+    for (const c of p) {
+      if (c === cellIdx) cellHas = true;
+      else if (neighSet.has(c)) neighHas = true;
+    }
+    if (cellHas) inCell += 1;
+    else if (neighHas) notInFlash += 1;
+    else notInNoFlash += 1;
+  }
+  const log2 = Math.log2;
+  const Hprior = log2(total);
+  let Hpost = 0;
+  if (inCell > 0) Hpost += (inCell / total) * log2(inCell);
+  if (notInNoFlash > 0) Hpost += (notInNoFlash / total) * log2(notInNoFlash);
+  if (notInFlash > 0) Hpost += (notInFlash / total) * log2(notInFlash);
+  return Math.max(0, Hprior - Hpost);
 }
 
 function fiveAhead(state) {
@@ -233,7 +272,7 @@ function probChainContinues(hand, distribution) {
 }
 
 // Score a candidate flip for the current hand.
-function scoreCell(state, cellIdx, hand, pFive, distribution, w) {
+function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w) {
   const dist = distribution.get(cellIdx);
   const bingoBonus = bingoLinesCompletedBy(state, cellIdx) * 10;
 
@@ -249,11 +288,13 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, w) {
 
   const ev = expectedImmediatePoints(hand, dist);
   const chainP = probChainContinues(hand, dist);
-  const uncertainty = valueUncertainty(dist);
-  // Base value-info (knowing this cell's own value) + flash-info (resolving
-  // neighbor 5-candidacy, conditional on the flash being unknown a priori).
-  const flashInfo = informativeNeighborCount(state, cellIdx, pFive);
-  const infoBonus = uncertainty * (1 + flashInfo * w.infoWeight);
+  // Real Shannon info gain (bits) about the 5-placement, exact from the
+  // constraint enumeration. When no placements are available (degenerate
+  // states with no remaining 5s), fall back to the cell's own value entropy.
+  const bits = placements && placements.length > 1
+    ? infoGainAboutFives(cellIdx, placements)
+    : valueUncertainty(dist);
+  const infoBonus = bits * w.infoWeight;
   const centerBias = -centerDistance(cellIdx) * w.centerTiebreak;
   const spreadBonus = w.spreadWeight ? spreadCount(state, cellIdx) * w.spreadWeight : 0;
   const pK = dist.K ?? 0;
@@ -448,12 +489,16 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
   const hidden = hiddenCells(state);
   const pFive = fiveProbabilities(state);
   const distribution = cellValueDistribution(state);
+  // One-time enumeration of all consistent 5-placements. Used by the new
+  // exact info-gain term in scoreCell — passed in rather than recomputed
+  // per cell because enumeration is O(C(candidates, remaining-5s)).
+  const placements = enumerate5Placements(state);
 
   let bestCell = null;
   let bestScore = -Infinity;
   let bestDetail = null;
   for (const idx of hidden) {
-    const { score, detail } = scoreCell(state, idx, hand, pFive, distribution, weights);
+    const { score, detail } = scoreCell(state, idx, hand, pFive, distribution, placements, weights);
     if (score > bestScore) {
       bestScore = score;
       bestCell = idx;

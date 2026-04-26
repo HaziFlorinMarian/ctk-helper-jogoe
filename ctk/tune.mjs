@@ -107,14 +107,14 @@ function evaluateConfig(weights, boards) {
 // 0 (off) up to a generous ceiling.
 function sampleConfig(rng) {
   return {
-    catchPenalty:   400 + rng() * 1200,  // was 50–1500, top-8 spread 510–1498
-    infoWeight:     1.2 + rng() * 2.1,   // was 0–3.5,   top-8 spread 1.47–3.04
+    catchPenalty:   400 + rng() * 1200,  // top-8 spread 510–1498
+    infoWeight:     8 + rng() * 28,      // bits-scale: pre-sweep peak 15–30
     centerTiebreak: rng() * 0.05,        // weak signal — keep wide
-    chainBonusMul:  1.2 + rng() * 1.4,   // was 0.1–2.5, top-8 spread 1.31–2.40
-    kHuntBase:      rng() * 320,         // was 0–300,   top-8 spread 47–291
+    chainBonusMul:  1.2 + rng() * 1.4,   // top-8 spread 1.31–2.40
+    kHuntBase:      rng() * 320,         // top-8 spread 47–291
     kHuntSlope:     rng() * 3.5,         // weak signal — keep wide
-    kHuntMax:       400 + rng() * 420,   // was 150–800, top-8 spread 462–796
-    spreadWeight:   rng() * 8,           // new term, default 0; explore widely
+    kHuntMax:       400 + rng() * 420,   // top-8 spread 462–796
+    spreadWeight:   rng() * 8,           // small effect at default 0
   };
 }
 
