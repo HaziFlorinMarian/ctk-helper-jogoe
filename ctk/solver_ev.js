@@ -22,7 +22,7 @@ import {
   isSafeFor5Turn,
 } from "./game.js";
 import { t } from "./i18n.js";
-import { suggestMoveSearch } from "./search.js";
+import { suggestMoveSearch, withinTurnFlipEv } from "./search.js";
 
 // Late-game expectimax. Triggers when the state is small enough for the
 // search to terminate within budget — past hand=5 with too many hidden cells
@@ -73,6 +73,11 @@ export const DEFAULT_WEIGHTS = {
   kHuntMax:      { early: 727,  mid: 727,  late: 727 },     // K-hunt ceiling
   spreadWeight:  { early: 0,    mid: 0,    late: 0 },       // board-coverage prior
   bingoProgressWeight: { early: 12, mid: 12, late: 12 },    // partial-line credit (sum of (othersDone/4)^2 over incomplete lines)
+  // Stranded-value future-catch factors per revealed-unscored value. Crude
+  // priors; tune via bench-stranded.mjs. K is intentionally excluded
+  // (kHuntBonus already prices revealing K).
+  strandedFactor: { 2: 0.7, 3: 0.5, 4: 0.3, 5: 0.1 },
+  strandedWeight: { early: 0, mid: 0, late: 0 },            // 0 = off; benchmark sets to 1.0
 };
 
 // Phase derived from the current hand. Recomputed per call (cheap).
@@ -300,8 +305,6 @@ function bingoLineProgress(state, cellIdx) {
       if (cell.state === "revealed" && cell.scored) done += 1;
       else if (cell.state === "hidden") othersHidden += 1;
     }
-    // If every other cell is already done, this flip completes the line —
-    // bingoLinesCompletedBy will credit it. Don't double-count.
     if (othersHidden === 0 && done === 4) continue;
     const ratio = done / 4;
     total += ratio * ratio;
@@ -323,6 +326,30 @@ function expectedImmediatePoints(hand, distribution) {
   return ev;
 }
 
+// Stranded-value term: when a flip LOSES (v > h, v != K), the cell becomes
+// face-up unscored. A later hand may catch it — that's deferred points the
+// existing `ev` doesn't credit. Per-value future-catch factor approximates the
+// probability the cell gets harvested. K is excluded (kHuntBonus already
+// prices it). Hands 5/K skip — no future hand can chain-catch their losses.
+//
+// Factors are coarse priors:
+//   v=2: hands 3,3,4 chain freely + hand=5 if safe → easy catch
+//   v=3: hands 4,5 only → good
+//   v=4: hand=5 only AND must be safe-for-5 → meh
+//   v=5: hand=5 only via score (turn ends) AND safe-for-5 → low
+function expectedStrandedValue(hand, distribution, strandedFactor) {
+  if (hand === "5" || hand === "K") return 0;
+  let sv = 0;
+  for (const v of VALUES) {
+    if (v === "K") continue; // handled via kHuntBonus
+    const p = distribution[v] ?? 0;
+    if (p === 0) continue;
+    if (compareHandVsRevealed(hand, v) !== "lose") continue;
+    sv += p * pointsFor(v) * (strandedFactor[v] ?? 0);
+  }
+  return sv;
+}
+
 // Probability that the turn CONTINUES after flipping this cell with `hand`.
 function probChainContinues(hand, distribution) {
   let p = 0;
@@ -334,7 +361,7 @@ function probChainContinues(hand, distribution) {
 }
 
 // Score a candidate flip for the current hand.
-function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w) {
+function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w, opts) {
   const dist = distribution.get(cellIdx);
   const bingoBonus = bingoLinesCompletedBy(state, cellIdx) * 10;
   const phase = phaseFor(state);
@@ -417,9 +444,31 @@ function scoreCell(state, cellIdx, hand, pFive, distribution, placements, w) {
     // K now is still a net gain.
     score = ev - evLater + infoBonus + spreadBonus + bingoProgressBonus + centerBias - kPenalty + kHuntBonus;
     detail = { ev, evLater, infoBonus, spreadBonus, bingoProgressBonus, kPenalty, kHuntBonus, reserved: true };
+  } else if (opts && opts.withinTurnEv && hand !== "1" && hand !== "K") {
+    // Within-turn expectimax: exact expected POINTS GAINED this turn from
+    // committing to flip cellIdx. Subsumes the immediate ev, chain bonus,
+    // and same-flip bingo bonus (which were heuristic approximations of this
+    // exact quantity). Hand=1 has no chains (no v<1) so within-turn EV ≡ ev;
+    // hand=K is single-shot. Skip both to save the search cost.
+    //
+    // catchPenalty kept for hand=5: within-turn EV correctly returns 0 on
+    // catch outcomes, but kHuntBonus is additive on top and the explicit
+    // penalty restores the risk balance the heuristic was tuned around.
+    const turnEv = withinTurnFlipEv(state, cellIdx, { maxNodes: opts.withinTurnNodes ?? 20000 });
+    score = turnEv + bingoProgressBonus + infoBonus + spreadBonus + centerBias - kPenalty + kHuntBonus;
+    detail = { turnEv, bingoProgressBonus, infoBonus, spreadBonus, kPenalty, kHuntBonus, withinTurn: true };
+    if (hand === "5") {
+      const pCatch = probAnyNeighborIsFive(state, cellIdx, placements);
+      score -= pCatch * w.catchPenalty;
+      detail.pCatch = pCatch;
+    }
   } else {
-    score = ev + chainBonus + bingoBonus + bingoProgressBonus + infoBonus + spreadBonus + centerBias - kPenalty + kHuntBonus;
-    detail = { ev, chainP, chainBonus, bingoBonus, bingoProgressBonus, infoBonus, spreadBonus, kPenalty, kHuntBonus };
+    const strandedW = pick(w, "strandedWeight", phase);
+    const strandedBonus = strandedW
+      ? expectedStrandedValue(hand, dist, w.strandedFactor ?? {}) * strandedW
+      : 0;
+    score = ev + chainBonus + bingoBonus + bingoProgressBonus + infoBonus + spreadBonus + centerBias - kPenalty + kHuntBonus + strandedBonus;
+    detail = { ev, chainP, chainBonus, bingoBonus, bingoProgressBonus, infoBonus, spreadBonus, kPenalty, kHuntBonus, strandedBonus };
     if (hand === "5") {
       const pCatch = probAnyNeighborIsFive(state, cellIdx, placements);
       score -= pCatch * w.catchPenalty;
@@ -440,6 +489,9 @@ function describeReason(state, hand, cellIdx, detail) {
   const parts = [];
   if (detail.reserved) {
     parts.push(t("reservedReason", { lost: (detail.evLater - detail.ev).toFixed(1) }));
+    if (detail.infoBonus) parts.push(t("infoReason", { bonus: detail.infoBonus.toFixed(1) }));
+  } else if (detail.withinTurn) {
+    parts.push(t("evReason", { ev: detail.turnEv.toFixed(1) }));
     if (detail.infoBonus) parts.push(t("infoReason", { bonus: detail.infoBonus.toFixed(1) }));
   } else {
     parts.push(t("evReason", { ev: detail.ev.toFixed(1) }));
@@ -478,6 +530,7 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
     (c, i) => c.state === "revealed" && !OPENING_PATTERN.includes(i),
   );
   if (
+    !options.disableOpener &&
     hand === "1" &&
     state.handIndex < OPENING_PATTERN.length &&
     !openerEarlyExit &&
@@ -503,15 +556,7 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
       if (state.cells[i].state === "hidden") hiddenCount += 1;
     }
     if (hiddenCount <= SEARCH_MAX_HIDDEN) {
-      // Switch to a P(gold)-dominant objective when the game is below
-      // target — the search would otherwise pick the highest-E[score]
-      // move even if a lower-mean / higher-variance move had a better
-      // chance of crossing 550. Above target, max E[score] is fine.
-      // `options.searchObjective = "score"` forces the legacy E[score]
-      // path for offline A/B benchmarking.
-      const defaultObjective = state.score < SCORE_TARGET ? "gold" : "score";
-      const objective = options.searchObjective ?? defaultObjective;
-      const r = suggestMoveSearch(state, { maxNodes: SEARCH_NODE_BUDGET, objective });
+      const r = suggestMoveSearch(state, { maxNodes: SEARCH_NODE_BUDGET });
       if (r && !r.searchExhausted) return r;
     }
   }
@@ -573,14 +618,17 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
   let bestCell = null;
   let bestScore = -Infinity;
   let bestDetail = null;
+  const ranked = options.allCandidates ? [] : null;
   for (const idx of hidden) {
-    const { score, detail } = scoreCell(state, idx, hand, pFive, distribution, placements, weights);
+    const { score, detail } = scoreCell(state, idx, hand, pFive, distribution, placements, weights, options);
+    if (ranked) ranked.push({ cellIdx: idx, score });
     if (score > bestScore) {
       bestScore = score;
       bestCell = idx;
       bestDetail = detail;
     }
   }
+  if (ranked) ranked.sort((a, b) => b.score - a.score);
 
   // Same-value catches: revealed-unscored cells whose value equals the current
   // hand card. They guarantee points but end the turn. Only worthwhile when no
@@ -621,5 +669,6 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
     reason: describeReason(state, hand, bestCell, bestDetail),
     pFive,
     distribution,
+    ...(ranked ? { rankedHidden: ranked, kind: bestDetail && bestDetail.kind === "catch" ? "catch" : "reveal" } : {}),
   };
 }

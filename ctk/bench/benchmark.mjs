@@ -17,8 +17,8 @@ import {
   NEIGHBORS,
   CELL_COUNT,
   BOARD_COUNTS,
-} from "./game.js";
-import { suggestMove } from "./solver.js";
+} from "../game.js";
+import { suggestMove } from "../solver.js";
 
 function shuffleInPlace(arr) {
   for (let i = arr.length - 1; i > 0; i--) {

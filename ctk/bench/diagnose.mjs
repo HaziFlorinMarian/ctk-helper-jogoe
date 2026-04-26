@@ -17,8 +17,8 @@ import {
   BOARD_COUNTS,
   HAND_SEQUENCE,
   pointsFor,
-} from "./game.js";
-import { suggestMove } from "./solver.js";
+} from "../game.js";
+import { suggestMove } from "../solver.js";
 
 const FIVE_HAND_INDEX = HAND_SEQUENCE.indexOf("5"); // 10
 const K_HAND_INDEX = HAND_SEQUENCE.indexOf("K");    // 11

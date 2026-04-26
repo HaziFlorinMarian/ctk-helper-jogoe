@@ -468,6 +468,88 @@ export function suggestMovePIMC(state, options = {}) {
   };
 }
 
+// Policy-rollout action selection (Tesauro & Galperin 1996).
+//
+// PIMC's strategy-fusion bias comes from the rollout policy SEEING the sampled
+// world's ground truth. Fix: keep world sampling, but use the heuristic
+// solver — which only sees the information set — as the rollout policy. The
+// estimate is an unbiased E[final score | first move = M, heuristic plays
+// out the rest], and "policy rollout" is provably ≥ the base policy in
+// expectation. We rank candidate first moves by E[score] under this estimate.
+//
+// Cost is high (each rollout = ~12 heuristic calls); hence the small-N option
+// and a dedicated bench rather than browser-live use.
+function rolloutWithHeuristicAfter(originalState, firstMove, world) {
+  const state = cloneState(originalState);
+  applyMove(state, firstMove, world);
+  let safety = 80;
+  while (!isGameOver(state) && safety-- > 0) {
+    const sug = heuristicSuggest(state);
+    if (!sug || sug.cellIdx == null) break;
+    const idx = sug.cellIdx;
+    const cell = state.cells[idx];
+    if (cell.state === "hidden") {
+      const v = world[idx];
+      let flashed = false;
+      for (const n of NEIGHBORS[idx]) {
+        if (world[n] === "5") { flashed = true; break; }
+      }
+      recordReveal(state, idx, v, flashed);
+    } else {
+      if (!catchCell(state, idx)) break;
+    }
+  }
+  return state.score;
+}
+
+export function suggestMovePolicyRollout(state, options = {}) {
+  const N = options.N ?? 50;
+  const hand = currentCard(state);
+  if (!hand) return null;
+  const moves = candidateMoves(state);
+  if (moves.length === 0) return null;
+
+  // Same K-fast-path as PIMC: don't burn rollouts on a guaranteed +100.
+  if (hand === "K") {
+    for (const m of moves) {
+      const c = state.cells[m.idx];
+      if (m.type === "catch" && c.value === "K") {
+        return { cellIdx: m.idx, score: 100, reason: "K on revealed K = +100" };
+      }
+    }
+  }
+
+  const worlds = sampleWorlds(state, N);
+  if (worlds.length === 0) return null;
+
+  // Score each move = E[final score under heuristic rollout]. Unlike full
+  // perfect-info PIMC, mean score is the right objective here — strategy
+  // fusion is gone, so the bias toward "would-be-good-with-perfect-info"
+  // moves is gone too.
+  let bestMove = null;
+  let bestMean = -Infinity;
+  let bestPGold = 0;
+  const allStats = [];
+  for (const m of moves) {
+    let sum = 0, gold = 0;
+    for (const w of worlds) {
+      const s = rolloutWithHeuristicAfter(state, m, w);
+      sum += s;
+      if (s >= CHEST_THRESHOLDS.gold) gold += 1;
+    }
+    const mean = sum / N;
+    const pGold = gold / N;
+    allStats.push({ move: m, mean, pGold });
+    if (mean > bestMean) { bestMean = mean; bestMove = m; bestPGold = pGold; }
+  }
+  return {
+    cellIdx: bestMove.idx,
+    score: bestMean,
+    reason: `policy-rollout E[score]≈${Math.round(bestMean)}, P(≥550)=${Math.round(bestPGold*100)}% (N=${N})`,
+    rollout: { allStats, bestMean, bestPGold },
+  };
+}
+
 // Play the rest of the game using the heuristic solver as the policy,
 // resolving every reveal against `world`'s ground-truth values. This mirrors
 // what a player following the heuristic would actually experience.

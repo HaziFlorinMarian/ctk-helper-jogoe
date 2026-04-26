@@ -14,8 +14,8 @@ import {
   NEIGHBORS,
   CELL_COUNT,
   BOARD_COUNTS,
-} from "./game.js";
-import { suggestMove } from "./solver.js";
+} from "../game.js";
+import { suggestMove } from "../solver.js";
 
 // ---------- seeded RNG + boards ----------
 function mulberry32(seed) {

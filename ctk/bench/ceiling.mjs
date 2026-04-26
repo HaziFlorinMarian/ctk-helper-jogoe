@@ -19,7 +19,7 @@ import {
   HAND_SEQUENCE,
   pointsFor,
   compareHandVsRevealed,
-} from "./game.js";
+} from "../game.js";
 
 const GOAL_GOLD = 550;
 

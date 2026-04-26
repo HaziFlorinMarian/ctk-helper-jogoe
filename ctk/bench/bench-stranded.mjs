@@ -1,8 +1,7 @@
-// 1D sweep over bingoProgressWeight: phase-flat values evaluated against
-// the current DEFAULT_WEIGHTS baseline on the SAME paired board set so we
-// can compare cleanly without per-config noise.
+// Sweep stranded-value weight: paired self-play vs baseline (weight=0).
+// Same boards across all configs to cancel sampling noise.
 //
-// Usage: node ctk/bench-bingo.mjs [games]
+// Usage: node ctk/bench-stranded.mjs [games] [seed] [csv-of-weights]
 
 import {
   createState,
@@ -11,8 +10,8 @@ import {
   isGameOver,
   NEIGHBORS,
   BOARD_COUNTS,
-} from "./game.js";
-import { suggestMove, DEFAULT_WEIGHTS } from "./solver.js";
+} from "../game.js";
+import { suggestMove, DEFAULT_WEIGHTS } from "../solver.js";
 
 function mulberry32(seed) {
   let s = seed >>> 0;
@@ -75,42 +74,41 @@ function evaluate(weights, boards) {
   return { pGold: gold / n, pSilver: silver / n, mean: sum / n, n };
 }
 
-function withBingoW(value) {
+function withStrandedW(value) {
   return {
     ...DEFAULT_WEIGHTS,
-    bingoProgressWeight: { early: value, mid: value, late: value },
+    strandedWeight: { early: value, mid: value, late: value },
   };
 }
 
 function main() {
-  const N = Number(process.argv[2] ?? 5000);
+  const N = Number(process.argv[2] ?? 3000);
   const seed = Number(process.argv[3] ?? 0xB14660);
   const sweepArg = process.argv[4];
-  const sweep = sweepArg ? sweepArg.split(",").map(Number) : [0, 2, 5, 10, 20, 40, 80];
+  const sweep = sweepArg ? sweepArg.split(",").map(Number) : [0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0];
   const boards = generateBoards(N, seed);
-  console.log(`bingoProgressWeight sweep — paired self-play, n=${N}`);
-  console.log(`  w=0 is the baseline (current DEFAULT_WEIGHTS).`);
+
+  console.log(`strandedWeight sweep — paired self-play, n=${N}, seed=${seed.toString(16)}`);
   console.log("");
   const results = [];
   const t0 = Date.now();
   for (let i = 0; i < sweep.length; i++) {
     const w = sweep[i];
-    const r = evaluate(withBingoW(w), boards);
+    const r = evaluate(withStrandedW(w), boards);
     results.push({ w, ...r });
     const dt = (Date.now() - t0) / 1000;
     const eta = (dt / (i + 1)) * (sweep.length - i - 1);
-    process.stdout.write(`\r  ${i+1}/${sweep.length}  ${dt.toFixed(1)}s elapsed  ETA ${eta.toFixed(0)}s    `);
+    process.stdout.write(`  ${i+1}/${sweep.length}  w=${w}  pGold=${(r.pGold*100).toFixed(2)}%  ${dt.toFixed(1)}s elapsed  ETA ${eta.toFixed(0)}s\n`);
   }
-  process.stdout.write(`\r${" ".repeat(60)}\r`);
   console.log("");
   console.log("Results:");
-  const baseline = results.find((r) => r.w === 0);
+  const baseline = results.find((r) => r.w === 0) ?? results[0];
   for (const r of results) {
     const se = Math.sqrt(r.pGold * (1 - r.pGold) / r.n) * 100;
     const delta = (r.pGold - baseline.pGold) * 100;
-    const tag = r.w === 0 ? " [baseline]" : "";
+    const tag = r === baseline ? " [baseline]" : "";
     console.log(
-      `  w=${String(r.w).padStart(3)}  pGold=${(r.pGold*100).toFixed(2)}% ±${se.toFixed(2)}  pSilver=${(r.pSilver*100).toFixed(2)}%  mean=${r.mean.toFixed(0)}  Δ=${delta>=0?"+":""}${delta.toFixed(2)}pp${tag}`,
+      `  w=${String(r.w).padStart(5)}  pGold=${(r.pGold*100).toFixed(2)}% ±${se.toFixed(2)}  pSilver=${(r.pSilver*100).toFixed(2)}%  mean=${r.mean.toFixed(0)}  Δ=${delta>=0?"+":""}${delta.toFixed(2)}pp${tag}`,
     );
   }
 }
