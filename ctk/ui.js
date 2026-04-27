@@ -227,7 +227,17 @@ export function bindClick(boardEl, handlers) {
 }
 
 export function bindKeyboard(handlers) {
+  // Windows quirk: with NumLock ON, Shift+Numpad makes the OS synthesize a
+  // Shift-up immediately before the numpad keydown (and a Shift-down after),
+  // so e.shiftKey is false on the numpad event AND a "real-time" tracked
+  // shiftHeld flag has already flipped to false. Workaround: remember the
+  // timestamp of the last Shift release; if a numpad event arrives within a
+  // small window after release, treat it as shifted.
+  let shiftHeld = false;
+  let shiftReleasedAt = 0;
+  const SHIFT_GRACE_MS = 50;
   document.addEventListener("keydown", (e) => {
+    if (e.key === "Shift") shiftHeld = true;
     if (e.key === "Escape") {
       handlers.onReset();
       e.preventDefault();
@@ -240,8 +250,19 @@ export function bindKeyboard(handlers) {
     }
     const mapped = CODE_TO_VALUE[e.code];
     if (mapped) {
-      handlers.onReveal(mapped, e.shiftKey);
+      const isNumpad = e.code.startsWith("Numpad");
+      const recentShift = isNumpad
+        && performance.now() - shiftReleasedAt < SHIFT_GRACE_MS;
+      const shifted = e.shiftKey || shiftHeld || recentShift;
+      handlers.onReveal(mapped, shifted);
       e.preventDefault();
     }
   });
+  document.addEventListener("keyup", (e) => {
+    if (e.key === "Shift") {
+      shiftHeld = false;
+      shiftReleasedAt = performance.now();
+    }
+  });
+  window.addEventListener("blur", () => { shiftHeld = false; });
 }
