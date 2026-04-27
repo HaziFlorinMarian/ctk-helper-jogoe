@@ -117,6 +117,10 @@ const STRINGS = {
       "<b>Loading the Twitch chat sends your IP and cookies to Twitch.</b> By clicking below you consent to that connection (revocable in the privacy policy).",
     twitchConsentBtn: "Load Twitch chat",
     twitchConsentRevoked: "Twitch-chat consent revoked. Reload to apply.",
+    customSfxTitle: "Click: pick custom sound · Right-click: reset",
+    customSfxSet: "Custom sound saved.",
+    customSfxReset: "Sound reset to default.",
+    customSfxTooBig: "Sound file too big (max 4 MB).",
     // ----- footer -----
     footerText: "Clean-room helper for Metin2 · Schnapp den König",
     // ----- ui.js dynamic -----
@@ -259,6 +263,10 @@ const STRINGS = {
       "<b>Beim Laden des Twitch-Chats werden deine IP und Cookies an Twitch übertragen.</b> Mit Klick unten willigst du dieser Verbindung zu (in der Datenschutzerklärung jederzeit widerrufbar).",
     twitchConsentBtn: "Twitch-Chat laden",
     twitchConsentRevoked: "Twitch-Chat-Einwilligung widerrufen. Bitte Seite neu laden.",
+    customSfxTitle: "Klick: eigenen Sound wählen · Rechtsklick: zurücksetzen",
+    customSfxSet: "Eigener Sound gespeichert.",
+    customSfxReset: "Sound auf Standard zurückgesetzt.",
+    customSfxTooBig: "Sound-Datei zu groß (max. 4 MB).",
     // ----- Fußzeile -----
     footerText: "Clean-Room-Helfer für Metin2 · Schnapp den König",
     // ----- ui.js dynamisch -----
