@@ -550,7 +550,7 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
   // Late game: hand off to expectimax. The search budget bounds branching
   // so we degrade gracefully on dense states; if it bails out (exhausted)
   // we fall back to the heuristic for this decision.
-  if (state.handIndex >= SEARCH_TRIGGER_HAND_INDEX) {
+  if (state.handIndex >= SEARCH_TRIGGER_HAND_INDEX && !options.skipSearch) {
     let hiddenCount = 0;
     for (let i = 0; i < state.cells.length; i++) {
       if (state.cells[i].state === "hidden") hiddenCount += 1;

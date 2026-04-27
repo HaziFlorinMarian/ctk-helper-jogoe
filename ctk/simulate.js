@@ -557,7 +557,7 @@ function playoutWithHeuristic(originalState, world) {
   const state = cloneState(originalState);
   let safety = 80;
   while (!isGameOver(state) && safety-- > 0) {
-    const sug = heuristicSuggest(state);
+    const sug = heuristicSuggest(state, undefined, { skipSearch: true });
     if (!sug || sug.cellIdx == null) break;
     const idx = sug.cellIdx;
     const cell = state.cells[idx];
