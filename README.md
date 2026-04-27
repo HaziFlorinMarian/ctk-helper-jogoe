@@ -5,8 +5,9 @@ what you see on the real client; it deduces where the 5s and the King are,
 suggests the best next move, and shows your live probability of clearing the
 **550-point gold chest**.
 
-Live URL (once deployed): `https://<user>.github.io/<repo>/`. No build step —
-pure HTML/CSS/JS that GitHub Pages serves directly.
+**Use it:** <https://dominikloefflerniteo.github.io/ctk-helper-jogoe/ctk/>
+
+No build step — pure HTML/CSS/JS that GitHub Pages serves directly.
 
 ## The game
 
