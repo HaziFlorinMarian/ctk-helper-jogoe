@@ -51,7 +51,7 @@ const FIVE_CARD_INDEX = HAND_SEQUENCE.indexOf("5");
 // cell). Beats greedy info-flip by ~+1.7pp gold per tune-opening.mjs. The
 // gain comes from a multi-turn property — saving the centre for later — that
 // a one-step heuristic can't see.
-const OPENING_PATTERN = [1, 3, 16, 18];
+const OPENING_PATTERN = [6, 8, 16, 18];
 
 // All tunable weights in one place so offline search (tune.mjs) can sweep
 // them. suggestMove() accepts an optional weights argument and falls back to
@@ -522,21 +522,23 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
   // `options.forceFullOpener` is an offline benchmarking knob to disable
   // that early-exit and measure its contribution.
   const openerEarlyExit = !options.forceFullOpener && fivesFullyInformed(state);
+  const openerPattern = options.openerPattern ?? OPENING_PATTERN;
   // If the user has revealed any cell that ISN'T part of the opener, they've
   // already deviated — drop the opener entirely and let the heuristic pick.
   // The pattern only pays off as a coordinated multi-flip; finishing the
   // remaining opener cells out of context loses the property that makes it
   // good. Recomputed each call so undo restores opener mode automatically.
   const openerDeviated = state.cells.some(
-    (c, i) => c.state === "revealed" && !OPENING_PATTERN.includes(i),
+    (c, i) => c.state === "revealed" && !openerPattern.includes(i),
   );
   if (
+    !options.disableOpener &&
     hand === "1" &&
-    state.handIndex < OPENING_PATTERN.length &&
+    state.handIndex < openerPattern.length &&
     !openerEarlyExit &&
     !openerDeviated
   ) {
-    for (const idx of OPENING_PATTERN) {
+    for (const idx of openerPattern) {
       if (state.cells[idx].state === "hidden") {
         return {
           cellIdx: idx,

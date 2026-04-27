@@ -233,7 +233,8 @@ after it landed.
 
 | Version | Gold | Change |
 |---:|---:|---|
-| **v0.12** | **44.0%** | Dead-line filter on bingos + extended late-game search to 7 hidden cells when below target. |
+| **v0.12.10** | **44.8%** | New opener pattern `[6,8,16,18]` (community-suggested by Hanfred — symmetric "inner corners" diagonal-in from each true corner) + custom-sound picker. Opener change measured at +0.8pp / ~5σ on 100k. |
+| v0.12 | 44.0% | Dead-line filter on bingos + extended late-game search to 7 hidden cells when below target. |
 | v0.11 | 43.8% | Late-game search now optimises `P(score ≥ 550)` instead of `E[score]`. |
 | v0.10 | 43.8% | Bingo-progress accumulator: rewards reveals that advance partial lines (squared progress ratio). |
 | v0.9 | 42.4% | Exact Shannon information gain about 5-placement replaces the hand-crafted info proxy. |
