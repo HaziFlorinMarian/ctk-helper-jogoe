@@ -130,6 +130,55 @@ if (els.muteBtn) {
     applyMute();
   });
 }
+
+// ---------- custom sound ----------
+// Lets the user pick their own ching mp3. We persist the file as a data URL
+// in localStorage so it survives reload without a server. Quota is ~5MB on
+// most browsers — files larger than 4MB are rejected up front.
+const CUSTOM_SFX_KEY = "ctk-custom-sfx-v1";
+const CUSTOM_SFX_MAX_BYTES = 4 * 1024 * 1024;
+const customSfxBtn = document.getElementById("customSfxBtn");
+const customSfxInput = document.getElementById("customSfxInput");
+function applyCustomSfx() {
+  const url = localStorage.getItem(CUSTOM_SFX_KEY);
+  if (els.chingSfx) els.chingSfx.src = url || "ching.mp3";
+  if (customSfxBtn) customSfxBtn.classList.toggle("off", !url);
+}
+applyCustomSfx();
+if (customSfxBtn && customSfxInput) {
+  customSfxBtn.addEventListener("click", () => customSfxInput.click());
+  customSfxBtn.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    localStorage.removeItem(CUSTOM_SFX_KEY);
+    applyCustomSfx();
+    showToast(t("customSfxReset"));
+  });
+  customSfxInput.addEventListener("change", () => {
+    const f = customSfxInput.files && customSfxInput.files[0];
+    customSfxInput.value = "";
+    if (!f) return;
+    if (f.size > CUSTOM_SFX_MAX_BYTES) {
+      showToast(t("customSfxTooBig"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        localStorage.setItem(CUSTOM_SFX_KEY, reader.result);
+        applyCustomSfx();
+        if (els.chingSfx && !muted) {
+          const sfx = els.chingSfx.cloneNode();
+          sfx.volume = 0.7;
+          sfx.play().catch(() => {});
+        }
+        showToast(t("customSfxSet"));
+      } catch {
+        showToast(t("customSfxTooBig"));
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+}
 if (els.minimalUiBtn) {
   els.minimalUiBtn.addEventListener("click", () => {
     const on = localStorage.getItem(MINIMAL_KEY) !== "1";
