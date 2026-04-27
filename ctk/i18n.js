@@ -14,6 +14,8 @@ const STRINGS = {
     // ----- left panel: session -----
     session: "Session",
     globalAllTime: "Everyone (all time)",
+    globalWhyLowerTooltip: "<strong>Why is this lower than the solver's rate?</strong><ul><li>Input typos when entering revealed values</li><li>Players who don't follow the suggestion every move</li><li>Players still using older versions of the helper</li><li>Page-open / partial-game counts that include people who never used the suggestions at all</li></ul>",
+    versionHistoryTooltip: "<strong>Version history</strong><ul class='version-history'><li><b>v0.12</b> &mdash; 44.0% gold &mdash; dead-line filter on bingos + extended late-game search to 7 hidden cells when below target</li><li><b>v0.11</b> &mdash; 43.8% gold &mdash; late-game search now optimises P(score &ge; 550) instead of E[score]</li><li><b>v0.10</b> &mdash; 43.8% gold &mdash; bingo-progress accumulator (rewards reveals that advance partial lines)</li><li><b>v0.9</b> &mdash; 42.4% gold &mdash; exact Shannon info gain about 5-placement replaces hand-crafted info proxy</li><li><b>v0.8</b> &mdash; 41.9% gold &mdash; legal pages (impressum, privacy) + Twitch chat consent gate</li><li><b>v0.7</b> &mdash; 41.9% gold &mdash; chat sidebar, edge-tab collapse, like button, page-views counter</li><li><b>v0.6</b> &mdash; 41.9% gold &mdash; first published chest-rate display, money-rain on lock-in</li><li><b>v0.5</b> &mdash; ~40% gold &mdash; spreadWeight prior, ceiling.mjs + diagnose.mjs offline tooling</li><li><b>v0.4</b> &mdash; ~38% gold &mdash; random-search weight tuning lifted gold rate ~8pp</li><li><b>v0.3</b> &mdash; benchmark.mjs harness for offline self-play measurement</li><li><b>v0.2</b> &mdash; chain bonus, K-hunt weighting, catch penalty during 5-turn</li><li><b>v0.1</b> &mdash; ~31.6% gold &mdash; hand-tuned baseline heuristic</li></ul><div class='version-note'>UX-only patches (v0.12.1&ndash;v0.12.5): Web Worker for the gold-chance compute, hover tooltips, panel polish.</div>",
     games: "Games",
     reset: "Reset",
     // ----- disclaimer / help -----
@@ -153,6 +155,8 @@ const STRINGS = {
     // ----- Linkes Panel: Sitzung -----
     session: "Sitzung",
     globalAllTime: "Alle (gesamt)",
+    globalWhyLowerTooltip: "<strong>Warum niedriger als die Solver-Quote?</strong><ul><li>Tippfehler bei der Eingabe der aufgedeckten Werte</li><li>Spieler die nicht jedem Vorschlag folgen</li><li>Spieler die noch ältere Versionen des Helfers nutzen</li><li>Seitenaufrufe und abgebrochene Spiele zählen mit, auch wenn keine Vorschläge genutzt wurden</li></ul>",
+    versionHistoryTooltip: "<strong>Versionshistorie</strong><ul class='version-history'><li><b>v0.12</b> &mdash; 44.0% Gold &mdash; Dead-Line-Filter f&uuml;r Bingos + Suche bis 7 verdeckte Felder, wenn unter dem Ziel</li><li><b>v0.11</b> &mdash; 43.8% Gold &mdash; Endspiel-Suche optimiert P(Score &ge; 550) statt E[Score]</li><li><b>v0.10</b> &mdash; 43.8% Gold &mdash; Bingo-Fortschritts-Bonus (belohnt Z&uuml;ge die Linien voranbringen)</li><li><b>v0.9</b> &mdash; 42.4% Gold &mdash; Exakter Shannon-Informationsgewinn &uuml;ber 5er-Positionen ersetzt heuristische N&auml;herung</li><li><b>v0.8</b> &mdash; 41.9% Gold &mdash; Impressum, Datenschutz, Twitch-Chat-Einwilligungs-Gate</li><li><b>v0.7</b> &mdash; 41.9% Gold &mdash; Chat-Sidebar, Edge-Tab zum Einklappen, Like-Button, Seitenaufruf-Z&auml;hler</li><li><b>v0.6</b> &mdash; 41.9% Gold &mdash; erste Anzeige der Truhen-Quote, Geld-Regen bei 100% Gold-Chance</li><li><b>v0.5</b> &mdash; ~40% Gold &mdash; spreadWeight-Priorit&auml;t, ceiling.mjs + diagnose.mjs als Offline-Werkzeug</li><li><b>v0.4</b> &mdash; ~38% Gold &mdash; Random-Search-Gewichts-Tuning hob die Gold-Rate um ~8pp</li><li><b>v0.3</b> &mdash; benchmark.mjs Selfplay-Harness f&uuml;r Offline-Messungen</li><li><b>v0.2</b> &mdash; Chain-Bonus, K&ouml;nigsjagd-Gewichtung, Fang-Strafe in der 5er-Runde</li><li><b>v0.1</b> &mdash; ~31.6% Gold &mdash; handgetunte Basis-Heuristik</li></ul><div class='version-note'>Reine UI-Updates (v0.12.1&ndash;v0.12.5): Web Worker f&uuml;r die Gold-Berechnung, Hover-Tooltips, Panel-Politur.</div>",
     games: "Spiele",
     reset: "Zurücksetzen",
     // ----- Hinweis / Hilfe -----
@@ -338,5 +342,8 @@ export function applyToDOM(root) {
   });
   r.querySelectorAll("[data-i18n-html]").forEach((el) => {
     el.innerHTML = t(el.dataset.i18nHtml);
+  });
+  r.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
   });
 }

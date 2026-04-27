@@ -13,7 +13,8 @@
 | Shannon info gain about 5-placement (replaced hand-crafted proxy) | +0.5pp | ~42.4% |
 | Joint catch penalty (placement-based instead of independence approx.) | neutral, kept for correctness | ~42.4% |
 | **Bingo-progress accumulator** (`bingoProgressWeight=12`) | **+1.4pp** | **43.8%** |
-| Gold-priority leaf in late-game search (P(score≥550) dominant when score < 550) | aggregate flat at n=100k, but fixes user-reported borderline scenarios | **43.8%** ← current |
+| Gold-priority leaf in late-game search (P(score≥550) dominant when score < 550) | aggregate flat at n=100k, but fixes user-reported borderline scenarios | **43.8%** |
+| Dead-line filter on bingo bonuses + extended search trigger (≤7 hidden when below target) | +0.2pp at n=100k, fixes user-reported phantom-bingo case (revealed-unscored 4 next to revealed 5 → line is dead) | **44.0%** ← current |
 
 ## Tried, didn't pan out (reverted or never shipped)
 | Experiment | Mechanism | Result |

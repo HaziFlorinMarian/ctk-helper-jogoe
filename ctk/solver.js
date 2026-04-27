@@ -33,7 +33,15 @@ import { suggestMoveSearch } from "./search.js";
 // leaf evaluator — left for future work.
 const SEARCH_TRIGGER_HAND_INDEX = 10;
 const SEARCH_MAX_HIDDEN = 6;
+// When below the gold target we widen the search ceiling by one cell so
+// borderline late-game states (score 350-549 with 7 hidden cells) still
+// get gold-aware play instead of falling back to greedy heuristic EV.
+// Going higher (8+ hidden) blows up branching cost — empirically ~18×
+// per-game time at maxHidden=8 — so we stop at 7 with a modest budget
+// bump. If the search exhausts we degrade to the heuristic.
+const SEARCH_MAX_HIDDEN_GOLD = 7;
 const SEARCH_NODE_BUDGET = 50000;
+const SEARCH_NODE_BUDGET_GOLD = 80000;
 
 const SCORE_TARGET = 550;
 const FIVE_CARD_INDEX = HAND_SEQUENCE.indexOf("5");
@@ -261,15 +269,59 @@ function probAnyNeighborIsFive(state, cellIdx, placements) {
   return hits / placements.length;
 }
 
+// Will `cell` ever score given the remaining hand sequence? A revealed-
+// unscored cell can score by:
+//   - same-value catch: a remaining hand card equals its value (and the cell
+//     is safe-for-5 if the value is 5; or unconditionally for K).
+//   - chain catch: a remaining hand card is strictly greater. Hand=5 chain
+//     additionally requires safe-for-5; hands 2-4 chain unconditionally.
+// If neither path remains we declare the cell "permanently dead" — its line
+// can never bingo. Bingo bonuses on that line are phantom and we should not
+// reward progress toward a line that contains one.
+function isCellPermanentlyDead(state, cellIdx) {
+  const cell = state.cells[cellIdx];
+  if (cell.state !== "revealed" || cell.scored) return false;
+  const v = cell.value;
+  if (v === "K") {
+    // K can be caught by hand=K only. If we're past that, dead.
+    return state.handIndex > HAND_SEQUENCE.indexOf("K");
+  }
+  // Future hand cards (those still ahead).
+  const fiveIdx = HAND_SEQUENCE.indexOf("5");
+  const fourIdx = HAND_SEQUENCE.indexOf("4");
+  const valueFirstIdx = HAND_SEQUENCE.indexOf(v);
+  const sameValueAhead = state.handIndex <= valueFirstIdx;
+  if (sameValueAhead) return false;          // hand=v will catch it
+  if (v === "5") return true;                // past hand=5 same-value, dead
+  // Chain catches: 2-4 chain unconditionally; 5 chains 1-4 only when safe.
+  if (state.handIndex <= fourIdx) return false; // hand=4 ahead → unconditional chain catches 1-3
+  // Past hand=4. Only hand=5 chain remains.
+  if (state.handIndex > fiveIdx) return true;   // past hand=5 too: dead
+  // At hand=5. v ∈ {1,2,3,4}; chain requires safe-for-5.
+  for (const n of NEIGHBORS[cellIdx]) {
+    const nc = state.cells[n];
+    if (nc.state === "revealed" && nc.value === "5") return true; // permanently unsafe
+  }
+  return false;
+}
+
+function lineHasPermanentlyDeadCell(state, line) {
+  for (const c of line) if (isCellPermanentlyDead(state, c)) return true;
+  return false;
+}
+
 // How many bingo lines would flipping `cellIdx` (and getting it scored)
 // complete? Bingo now requires every cell in the line to be revealed AND
 // scored, so count only lines where every OTHER cell already satisfies that.
+// Lines containing a permanently-unscoreable cell are skipped — they can
+// never complete regardless of what we flip.
 function bingoLinesCompletedBy(state, cellIdx) {
   let count = 0;
   for (let i = 0; i < BINGO_LINES.length; i++) {
     if (state.completedBingos.has(i)) continue;
     const line = BINGO_LINES[i];
     if (!line.includes(cellIdx)) continue;
+    if (lineHasPermanentlyDeadCell(state, line)) continue;
     const othersDone = line.every((c) => {
       if (c === cellIdx) return true;
       const cell = state.cells[c];
@@ -292,6 +344,7 @@ function bingoLineProgress(state, cellIdx) {
     if (state.completedBingos.has(i)) continue;
     const line = BINGO_LINES[i];
     if (!line.includes(cellIdx)) continue;
+    if (lineHasPermanentlyDeadCell(state, line)) continue;
     let done = 0;
     let othersHidden = 0;
     for (const c of line) {
@@ -502,16 +555,20 @@ export function suggestMove(state, weights = DEFAULT_WEIGHTS, options = {}) {
     for (let i = 0; i < state.cells.length; i++) {
       if (state.cells[i].state === "hidden") hiddenCount += 1;
     }
-    if (hiddenCount <= SEARCH_MAX_HIDDEN) {
-      // Switch to a P(gold)-dominant objective when the game is below
-      // target — the search would otherwise pick the highest-E[score]
-      // move even if a lower-mean / higher-variance move had a better
-      // chance of crossing 550. Above target, max E[score] is fine.
-      // `options.searchObjective = "score"` forces the legacy E[score]
-      // path for offline A/B benchmarking.
-      const defaultObjective = state.score < SCORE_TARGET ? "gold" : "score";
-      const objective = options.searchObjective ?? defaultObjective;
-      const r = suggestMoveSearch(state, { maxNodes: SEARCH_NODE_BUDGET, objective });
+    // Switch to a P(gold)-dominant objective when the game is below
+    // target — the search would otherwise pick the highest-E[score] move
+    // even if a lower-mean / higher-variance move had a better chance of
+    // crossing 550. Above target, max E[score] is fine. The gold leaf
+    // prunes harder, so we can afford a wider hidden-cell ceiling and a
+    // bigger node budget below target. `options.searchObjective =
+    // "score"` forces the legacy E[score] path for offline A/B.
+    const belowTarget = state.score < SCORE_TARGET;
+    const defaultObjective = belowTarget ? "gold" : "score";
+    const objective = options.searchObjective ?? defaultObjective;
+    const maxHidden = objective === "gold" ? SEARCH_MAX_HIDDEN_GOLD : SEARCH_MAX_HIDDEN;
+    const nodeBudget = objective === "gold" ? SEARCH_NODE_BUDGET_GOLD : SEARCH_NODE_BUDGET;
+    if (hiddenCount <= maxHidden) {
+      const r = suggestMoveSearch(state, { maxNodes: nodeBudget, objective });
       if (r && !r.searchExhausted) return r;
     }
   }

@@ -591,18 +591,20 @@ function showToast(message) {
 }
 
 // ---------- per-game gold-chance card ----------
-// Async so the rest of the UI repaints first; a monotonic job id cancels stale
-// computations when the user keeps acting quickly.
+// Off-main-thread compute via Web Worker so UI clicks stay responsive
+// while the rollout runs (it can take 1-2s in late-game states). A
+// monotonic job id discards stale results when the user keeps acting
+// quickly. We terminate any in-flight worker on each new request so
+// rapid clicks don't queue up wasted CPU work.
 let goldJob = 0;
-function queueGoldChanceUpdate() {
-  const jobId = ++goldJob;
-  els.gameGoldPct.textContent = "…";
-  els.gameGoldPct.classList.remove("cold", "warm", "hot");
-  els.gameGoldNote.textContent = t("goldChanceComputing");
-  setTimeout(() => {
-    if (jobId !== goldJob) return;
-    const r = computeChestProbabilities(state, { N: 40 });
-    if (jobId !== goldJob) return;
+let goldWorker = null;
+function spawnGoldWorker() {
+  const w = new Worker(new URL("./gold-worker.js", import.meta.url), { type: "module" });
+  w.onmessage = (e) => {
+    const { jobId, result, error } = e.data;
+    if (jobId !== goldJob) return; // stale — user has moved on
+    if (error) { console.error("gold worker:", error); return; }
+    const r = result;
     const pctText = Math.round(r.pGold * 100) + "%";
     els.gameGoldPct.textContent = pctText;
     els.gameGoldPct.classList.toggle("hot",  r.pGold >= 0.6);
@@ -618,7 +620,23 @@ function queueGoldChanceUpdate() {
       goldRainFired = true;
       triggerGoldRain();
     }
-  }, 0);
+  };
+  w.onerror = (e) => console.error("gold worker error:", e.message);
+  return w;
+}
+
+function queueGoldChanceUpdate() {
+  const jobId = ++goldJob;
+  els.gameGoldPct.textContent = "…";
+  els.gameGoldPct.classList.remove("cold", "warm", "hot");
+  els.gameGoldNote.textContent = t("goldChanceComputing");
+  // Terminate any in-flight job so rapid clicks don't pile up. Worker
+  // creation is fast (~10-20 ms) and saves us seconds of stale rollout.
+  if (goldWorker) goldWorker.terminate();
+  goldWorker = spawnGoldWorker();
+  // structuredClone runs on postMessage; pass the live state object and
+  // let the worker boundary serialise it. Sets/Maps survive intact.
+  goldWorker.postMessage({ jobId, state, options: { N: 40 } });
 }
 
 // ---------- solver / refresh ----------

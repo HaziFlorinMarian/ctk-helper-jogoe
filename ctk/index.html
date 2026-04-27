@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Catch the King - Helper by Jogoe</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=0.12.8" />
 </head>
 <body>
   <header>
@@ -28,7 +28,7 @@
         </div>
       </div>
       <span class="discord">discord: @jogoe</span>
-      <span class="version">v0.11 - 2026/04/26 23:17<span class="version-views" id="versionViews"></span></span>
+      <span class="version">v0.12.8 - 2026/04/27 13:08<span class="version-views" id="versionViews"></span><span class="info-hint info-hint-version" tabindex="0" aria-label="Version history">?<span class="info-hint-tooltip info-hint-tooltip-version" data-i18n-html="versionHistoryTooltip"></span></span></span>
     </div>
   </header>
 
@@ -41,12 +41,12 @@
           <li class="chest-row chest-gold">
             <span class="chest-name" data-i18n="gold">Gold</span>
             <span class="chest-target">&ge;550</span>
-            <span class="chest-pct">43.8%</span>
+            <span class="chest-pct">44.0%</span>
           </li>
           <li class="chest-row chest-silver">
             <span class="chest-name" data-i18n="silver">Silver</span>
             <span class="chest-target">400&ndash;549</span>
-            <span class="chest-pct">44.9%</span>
+            <span class="chest-pct">44.7%</span>
           </li>
           <li class="chest-row chest-bronze">
             <span class="chest-name" data-i18n="bronze">Bronze</span>
@@ -80,7 +80,10 @@
         <button id="sessionResetBtn" class="action-btn session-reset" type="button" data-i18n="reset">Reset</button>
       </div>
       <div class="info-block">
-        <div class="label" data-i18n="globalAllTime">Everyone (all time)</div>
+        <div class="label">
+          <span data-i18n="globalAllTime">Everyone (all time)</span>
+          <span class="info-hint" tabindex="0" aria-label="Why is this lower than the solver rate?">?<span class="info-hint-tooltip" data-i18n-html="globalWhyLowerTooltip"></span></span>
+        </div>
         <ul class="session-list">
           <li class="session-row">
             <span class="session-name" data-i18n="games">Games</span>
