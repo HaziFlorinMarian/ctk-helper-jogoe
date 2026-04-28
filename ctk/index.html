@@ -3,13 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catch the King - Helper by Jogoe</title>
+  <title>Schnapp den König / Catch the King Helper – Metin2 Goldene Königsbeute Solver</title>
+  <meta name="description" content="Live Helfer für Metin2 Schnapp den König (Catch the King) im Event Goldene Königsbeute. ~44.8% Gold-Quote, kostenloser Open-Source-Solver, läuft direkt im Browser." />
+  <meta name="keywords" content="Schnapp den König, Catch the King, Goldene Königsbeute, Golden King's Loot, Metin2, Metin2 Helfer, Metin2 Helper, Metin2 Solver, Schnapp den König Helfer, König fangen, Mini-Spiel, mini-game, Gold-Truhe, Bingo, 5x5, Metin2 Event" />
+  <meta name="author" content="Jogoe" />
+  <link rel="canonical" href="https://dominikloefflerniteo.github.io/ctk-helper-jogoe/ctk/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Schnapp den König / Catch the King Helper – Metin2 Goldene Königsbeute Solver" />
+  <meta property="og:description" content="Kostenloser Browser-Helfer für das Metin2 Schnapp den König Mini-Spiel (Goldene Königsbeute / Catch the King). Live Zug-Vorschläge, ~44.8% Gold-Quote." />
+  <meta property="og:url" content="https://dominikloefflerniteo.github.io/ctk-helper-jogoe/ctk/" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="de_DE" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Schnapp den König / Catch the King Helper – Goldene Königsbeute" />
+  <meta name="twitter:description" content="Metin2 Schnapp den König / Catch the King Solver – Live Zug-Vorschläge, ~44.8% Gold-Quote, läuft im Browser." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Catch the King Helper",
+    "alternateName": "Schnapp den König Helfer",
+    "description": "In-browser solver and move suggester for the Metin2 'Schnapp den König' / 'Catch the King' mini-game. Heuristic ranking with live gold-chance estimate.",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any (web browser)",
+    "url": "https://dominikloefflerniteo.github.io/ctk-helper-jogoe/ctk/",
+    "inLanguage": ["en", "de"],
+    "isAccessibleForFree": true,
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "author": { "@type": "Person", "name": "Jogoe" }
+  }
+  </script>
 </head>
 <body>
   <header>
-    <h1>Catch the King helper <span class="subtle">with Heuristic move suggestion</span></h1>
+    <div class="header-left">
+      <h1>Catch the King helper <span class="subtle">with heuristic move suggestion</span></h1>
+    </div>
+    <p class="page-intro" data-i18n-html="pageIntro">
+      Free open-source helper for the Metin2 mini-game <strong>Schnapp den K&ouml;nig</strong> / <strong>Catch the King</strong>. Hover a cell on the 5&times;5 board, press the value you see, and the solver suggests the best move every turn &mdash; with live gold-chance and a ~44.8% gold rate at full follow.
+    </p>
     <div class="header-meta">
       <div class="header-controls">
         <div class="header-toggles" role="group" aria-label="Toggles">
@@ -30,10 +64,14 @@
         <div class="lang-switcher" role="group" aria-label="Language">
           <button type="button" class="lang-btn" data-lang="en">EN</button>
           <button type="button" class="lang-btn" data-lang="de">DE</button>
+          <button type="button" class="lang-btn" data-lang="tr">TR</button>
+          <button type="button" class="lang-btn" data-lang="ro">RO</button>
+          <button type="button" class="lang-btn" data-lang="es">ES</button>
+          <button type="button" class="lang-btn" data-lang="pl">PL</button>
         </div>
       </div>
       <span class="discord">discord: @jogoe</span>
-      <span class="version">v0.12.11 - 2026/04/28 16:29<span class="version-views" id="versionViews"></span><span class="info-hint info-hint-version" tabindex="0" aria-label="Version history">?<span class="info-hint-tooltip info-hint-tooltip-version" data-i18n-html="versionHistoryTooltip"></span></span></span>
+      <span class="version">v0.12.23 - 2026/04/28 18:40<span class="version-views" id="versionViews"></span><span class="info-hint info-hint-version" tabindex="0" aria-label="Version history">?<span class="info-hint-tooltip info-hint-tooltip-version" data-i18n-html="versionHistoryTooltip"></span></span></span>
     </div>
   </header>
 
@@ -63,7 +101,10 @@
       </div>
 
       <div class="info-block">
-        <div class="label" data-i18n="session">Session</div>
+        <div class="label session-label">
+          <span data-i18n="session">Session</span>
+          <button id="sessionResetBtn" class="session-reset" type="button" data-i18n="reset" title="Reset session">Reset</button>
+        </div>
         <ul class="session-list">
           <li class="session-row">
             <span class="session-name" data-i18n="games">Games</span>
@@ -82,7 +123,6 @@
             <span><span id="sessionBronze">0</span>&nbsp;<span id="sessionPctBronze" class="session-pct"></span></span>
           </li>
         </ul>
-        <button id="sessionResetBtn" class="action-btn session-reset" type="button" data-i18n="reset">Reset</button>
       </div>
       <div class="info-block">
         <div class="label">
@@ -117,9 +157,9 @@
         </button>
       </div>
 
-      <div class="promo-text">
-      Bored? Waiting for your sets to farm? Check out the <a href="https://dominikloefflerniteo.github.io/metin_upgradesim/" target="_blank">Metin2 Upgrade Simulator</a>.
-    </div>
+      <div class="promo-text" data-i18n-html="supportText">
+        <strong>This helper will never have ads.</strong> If you want to support the project, you can donate on <a href="https://paypal.me/jogoe" target="_blank" rel="noopener">PayPal</a> &mdash; every bit truly means a lot. Thank you! &lt;3
+      </div>
     </aside>
 
     
@@ -192,6 +232,201 @@
     </div>
   </aside>
   </div>
+
+  <article class="long-form" id="guide">
+    <section lang="de" class="long-form-section">
+      <h2>Schnapp den K&ouml;nig &ndash; Spiel, Regeln, Strategie</h2>
+      <p>
+        <strong>Schnapp den K&ouml;nig</strong> (englisch: <em>Catch the King</em>) ist
+        ein Event-Mini-Spiel in <strong>Metin2</strong>. Ziel ist es, auf einem
+        5&times;5-Brett mit verdeckten Karten m&ouml;glichst viele Punkte zu sammeln
+        und als h&ouml;chste Belohnung die <strong>Goldene K&ouml;nigsbeute</strong>
+        (die Gold-Truhe) zu erspielen &ndash; daneben gibt es auch eine Silberne und
+        eine Bronzene Truhe. Dieser <strong>Schnapp den K&ouml;nig Helfer</strong>
+        (auch <em>Solver</em> genannt) zeigt dir live den besten Zug
+        und deine aktuelle Gold-Chance.
+      </p>
+
+      <h3>Spielregeln</h3>
+      <p>
+        Auf dem 5&times;5-Feld liegen 25 verdeckte Karten:
+      </p>
+      <ul>
+        <li><b>7&times;</b> die <b>1</b> (10 Punkte)</li>
+        <li><b>4&times;</b> die <b>2</b> (20 Punkte)</li>
+        <li><b>5&times;</b> die <b>3</b> (30 Punkte)</li>
+        <li><b>5&times;</b> die <b>4</b> (40 Punkte)</li>
+        <li><b>3&times;</b> die <b>5</b> (50 Punkte)</li>
+        <li><b>1&times;</b> der <b>K&ouml;nig</b> (100 Punkte)</li>
+      </ul>
+      <p>
+        Du spielst eine feste Reihenfolge von Handkarten: f&uuml;nf 1en, zwei 2en, zwei 3en,
+        eine 4, eine 5 und zum Schluss den K&ouml;nig. Mit jeder Handkarte kannst du
+        entweder ein verdecktes Feld aufdecken oder ein bereits aufgedecktes
+        Feld <em>fangen</em>. H&ouml;here Handkarte auf niedrigerer Brettkarte = Punkte und
+        die Runde geht weiter (<b>Kettenfang</b>). Gleiche Werte = Punkte, Runde endet.
+        Niedrigere Hand auf h&ouml;here Brettkarte = Runde verloren ohne Punkte.
+      </p>
+
+      <h3>Die 5er-Regel und das Blinken</h3>
+      <p>
+        Liegt eine 5 in einem der 8 Nachbarfelder einer verdeckten Karte, blinkt diese
+        beim Aufdecken rot (<em>Blinken</em>). Auf der 5er-Runde darfst du nur ein Feld
+        ausw&auml;hlen, das mindestens einen 5er-Nachbar hat &ndash; sonst geht die Karte
+        verloren. Genau aus diesem Grund ist es so wichtig, fr&uuml;h die Position der
+        5er einzugrenzen.
+      </p>
+
+      <h3>Bingo-Linien</h3>
+      <p>
+        Es gibt insgesamt <b>12 Bingo-Linien</b>: 5 Reihen, 5 Spalten und 2 Diagonalen.
+        Wer alle 5 Felder einer Linie erfolgreich f&auml;ngt, bekommt zus&auml;tzlich
+        <b>+10 Punkte</b> Bingo-Bonus. Mehrere Bingos summieren sich. Theoretisch
+        m&ouml;glich sind <b>870 Punkte</b> pro Spiel, in der Praxis liegt der Schnitt mit
+        diesem Helfer bei rund <b>525 Punkten</b>.
+      </p>
+
+      <h3>Belohnungen &ndash; Truhen-Stufen</h3>
+      <ul>
+        <li><b>Goldene K&ouml;nigsbeute</b> (Gold-Truhe): ab 550 Punkten</li>
+        <li><b>Silberne Truhe</b>: 400&ndash;549 Punkte</li>
+        <li><b>Bronzene Truhe</b>: 100&ndash;399 Punkte</li>
+      </ul>
+      <p>
+        Bei perfektem Befolgen aller Vorschl&auml;ge holt dieser <strong>Metin2 Helfer</strong>
+        in &uuml;ber <b>100.000 simulierten Spielen</b> die <strong>Goldene
+        K&ouml;nigsbeute</strong> in ca. <b>44.8&nbsp;%</b> der F&auml;lle &ndash; Silber
+        in weiteren 43.6&nbsp;%, Bronze in 11.6&nbsp;%.
+      </p>
+
+      <h3>Strategie-Tipps</h3>
+      <ul>
+        <li>
+          <b>Opener-Muster (R2C2, R2C4, R4C2, R4C4):</b> die ersten vier 1er-Karten
+          immer auf diese vier Felder. Sie liegen kompakt um die Mitte und liefern
+          maximale Information &uuml;ber die Position der 5er.
+        </li>
+        <li>
+          <b>Mitte freihalten:</b> Das Mittelfeld hat 8 Nachbarn und ist damit das
+          wertvollste Feld f&uuml;r Ketten und Bingos. Sp&auml;t aufdecken oder per
+          5er-Runde einsammeln.
+        </li>
+        <li>
+          <b>K&ouml;nig finden:</b> Sobald der K&ouml;nig sichtbar ist, wird die K-Runde
+          ein garantierter +100. Helfer priorisiert Felder mit hoher P(K&ouml;nig).
+        </li>
+        <li>
+          <b>Risikobereitschaft:</b> Wenn du unter 550 stehst, ist Risiko oft richtig.
+          Auf Sicher zu spielen bringt mehr Silber, weniger Gold &ndash; gemessen
+          &uuml;ber 5000+ Vergleichsspiele.
+        </li>
+      </ul>
+
+      <h3>Wie der Helfer dich unterst&uuml;tzt</h3>
+      <p>
+        Halte mit der Maus &uuml;ber ein Feld und dr&uuml;cke <kbd>1</kbd>&ndash;<kbd>5</kbd>
+        oder <kbd>K</kbd>/<kbd>6</kbd> f&uuml;r den aufgedeckten Wert. <kbd>Shift</kbd>
+        + Wert markiert Felder, die geblinkt haben. Klick auf ein
+        nicht-gewertetes Feld f&auml;ngt es mit der aktuellen Handkarte ein.
+        <kbd>Backspace</kbd> macht die letzte Aktion r&uuml;ckg&auml;ngig, <kbd>ESC</kbd>
+        startet ein neues Spiel.
+      </p>
+    </section>
+
+    <section lang="en" class="long-form-section">
+      <h2>Catch the King &ndash; Game, Rules, Strategy</h2>
+      <p>
+        <strong>Catch the King</strong> (German: <em>Schnapp den K&ouml;nig</em>) is
+        an event mini-game in <strong>Metin2</strong>. The goal: score as many points
+        as possible on a 5&times;5 grid of face-down cards to win the
+        <strong>Golden King's Loot</strong> (German: <em>Goldene K&ouml;nigsbeute</em>) &mdash;
+        the gold-tier reward chest. Silver and bronze chests are awarded for lower
+        score brackets. This <strong>Catch the King helper</strong> (a.k.a.
+        <em>solver</em>) shows the best move on every turn and your live
+        gold-chance.
+      </p>
+
+      <h3>Game Rules</h3>
+      <p>
+        The 5&times;5 board contains 25 face-down cards:
+      </p>
+      <ul>
+        <li><b>7&times;</b> the <b>1</b> (10 points)</li>
+        <li><b>4&times;</b> the <b>2</b> (20 points)</li>
+        <li><b>5&times;</b> the <b>3</b> (30 points)</li>
+        <li><b>5&times;</b> the <b>4</b> (40 points)</li>
+        <li><b>3&times;</b> the <b>5</b> (50 points)</li>
+        <li><b>1&times;</b> the <b>King</b> (100 points)</li>
+      </ul>
+      <p>
+        You play a fixed sequence of hand cards: five 1s, two 2s, two 3s, one 4, one
+        5, and finally the King. Each hand card can either reveal a face-down field or
+        catch a face-up one. Higher hand on lower board card = score and continue the
+        turn (<b>chain catch</b>). Same value = score and turn ends. Lower hand on
+        higher card = turn lost without points.
+      </p>
+
+      <h3>The 5-Rule and Flashing</h3>
+      <p>
+        If a 5 sits in any of the 8 neighbours of a hidden card, that card flashes red
+        when revealed. On the 5-turn, only cells with at least one 5-neighbour can
+        score the 5-card &ndash; everything else loses the card. This is why locking
+        down the 5 positions early is critical.
+      </p>
+
+      <h3>Bingo Lines</h3>
+      <p>
+        There are <b>12 bingo lines</b>: 5 rows, 5 columns, 2 diagonals. Catching all
+        5 cells in a line awards an extra <b>+10 bingo bonus</b>. Multiple bingos
+        stack. The theoretical maximum is <b>870 points</b> per game; the average
+        with this helper is around <b>525</b>.
+      </p>
+
+      <h3>Reward Chest Tiers</h3>
+      <ul>
+        <li><b>Golden King's Loot</b> (gold chest): 550+ points</li>
+        <li><b>Silver chest</b>: 400&ndash;549 points</li>
+        <li><b>Bronze chest</b>: 100&ndash;399 points</li>
+      </ul>
+      <p>
+        With perfect adherence to suggestions, this <strong>Metin2 helper</strong>
+        lands the <strong>Golden King's Loot</strong> in <b>~44.8&nbsp;%</b> of
+        <b>100,000 simulated games</b>, silver in another 43.6&nbsp;%, bronze in
+        11.6&nbsp;%.
+      </p>
+
+      <h3>Strategy Tips</h3>
+      <ul>
+        <li>
+          <b>Opener pattern (R2C2, R2C4, R4C2, R4C4):</b> always play the first four
+          1-cards on these four cells. They cluster around the centre and yield
+          maximum information about where the 5s are hiding.
+        </li>
+        <li>
+          <b>Save the centre:</b> the centre cell has 8 neighbours, the highest
+          leverage on the board for chains and bingos. Reveal late or pick it up
+          during the 5-turn.
+        </li>
+        <li>
+          <b>King hunt:</b> once the King is visible, the K-turn becomes a
+          guaranteed +100. The helper prioritizes cells with high P(King).
+        </li>
+        <li>
+          <b>Risk tolerance:</b> if you're below 550, risk is usually correct. Playing
+          safe yields more silver but less gold &ndash; measured across 5,000+
+          comparison games.
+        </li>
+      </ul>
+
+      <h3>How the Helper Works</h3>
+      <p>
+        Hover a cell and press <kbd>1</kbd>&ndash;<kbd>5</kbd> or <kbd>K</kbd>/<kbd>6</kbd>
+        for the revealed value. <kbd>Shift</kbd> + value marks a field that flashed.
+        Click an unscored cell to catch it with your current hand card.
+        <kbd>Backspace</kbd> undoes the last action, <kbd>ESC</kbd> resets the game.
+      </p>
+    </section>
+  </article>
 
   <footer>
     <span class="subtle" data-i18n="footerText">Clean-room helper for Metin2 &middot; Schnapp den K&ouml;nig</span>

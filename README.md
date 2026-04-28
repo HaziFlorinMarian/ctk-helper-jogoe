@@ -284,6 +284,14 @@ the all-time rate lower than the solver" explainer, panel polish.
   −0.7 to −1.8pp gold (z up to −1.8), with a clean monotonic decay on
   silver-band — the global Shannon term already prices the same signal,
   so adding a parallel one double-counts and disrupts the score balance.
+- **Gamble aversion (`gambleAversionWeight`)** — penalty on hand 2-4 flips
+  proportional to P(5), motivated by user-spotted states where the helper
+  flipped a 50%-5 cell instead of catching a guaranteed same-value 4.
+  Sweep at n=5000 across w∈{20..400} lost monotonically (−0.6 to −4.3pp
+  gold, z up to −4.3), with silver-band staying flat or slightly higher.
+  Diagnostic: the heuristic's gambling converts borderline-silver games
+  into golds; removing it keeps you at silver more reliably but bleeds
+  gold rate. The "wrong-feeling" suggestion is correct on average.
 
 ## Known limits
 

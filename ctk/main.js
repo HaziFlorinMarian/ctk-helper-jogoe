@@ -674,8 +674,27 @@ function spawnGoldWorker() {
   return w;
 }
 
+// Fresh-game shortcut: at handIndex=0 with no reveals, every random board
+// gives the same expected gold rate (the solver's measured 44.8% over 100k
+// games). Showing the live PIMC value here would just sample noise around
+// that constant — pin to the headline number until the player makes a move.
+const FRESH_GAME_GOLD_PCT = 44.8;
+function isFreshGame() {
+  if (state.handIndex !== 0) return false;
+  for (const c of state.cells) if (c.state !== "hidden") return false;
+  return true;
+}
+
 function queueGoldChanceUpdate() {
   const jobId = ++goldJob;
+  if (isFreshGame()) {
+    els.gameGoldPct.textContent = FRESH_GAME_GOLD_PCT + "%";
+    els.gameGoldPct.classList.remove("cold", "hot", "locked");
+    els.gameGoldPct.classList.add("warm");
+    els.gameGoldNote.textContent = t("acrossRounds");
+    if (goldWorker) { goldWorker.terminate(); goldWorker = null; }
+    return;
+  }
   els.gameGoldPct.textContent = "…";
   els.gameGoldPct.classList.remove("cold", "warm", "hot");
   els.gameGoldNote.textContent = t("goldChanceComputing");

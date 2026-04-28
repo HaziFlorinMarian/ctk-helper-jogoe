@@ -18,6 +18,15 @@ const STRINGS = {
     versionHistoryTooltip: "<strong>Version history</strong><ul class='version-history'><li><b>v0.12.10</b> &mdash; 44.8% gold &mdash; new opener pattern [6,8,16,18] (community-suggested by Hanfred) + custom-sound picker</li><li><b>v0.12</b> &mdash; 44.0% gold &mdash; dead-line filter on bingos + extended late-game search to 7 hidden cells when below target</li><li><b>v0.11</b> &mdash; 43.8% gold &mdash; late-game search now optimises P(score &ge; 550) instead of E[score]</li><li><b>v0.10</b> &mdash; 43.8% gold &mdash; bingo-progress accumulator (rewards reveals that advance partial lines)</li><li><b>v0.9</b> &mdash; 42.4% gold &mdash; exact Shannon info gain about 5-placement replaces hand-crafted info proxy</li><li><b>v0.8</b> &mdash; 41.9% gold &mdash; legal pages (impressum, privacy) + Twitch chat consent gate</li><li><b>v0.7</b> &mdash; 41.9% gold &mdash; chat sidebar, edge-tab collapse, like button, page-views counter</li><li><b>v0.6</b> &mdash; 41.9% gold &mdash; first published chest-rate display, money-rain on lock-in</li><li><b>v0.5</b> &mdash; ~40% gold &mdash; spreadWeight prior, ceiling.mjs + diagnose.mjs offline tooling</li><li><b>v0.4</b> &mdash; ~38% gold &mdash; random-search weight tuning lifted gold rate ~8pp</li><li><b>v0.3</b> &mdash; benchmark.mjs harness for offline self-play measurement</li><li><b>v0.2</b> &mdash; chain bonus, K-hunt weighting, catch penalty during 5-turn</li><li><b>v0.1</b> &mdash; ~31.6% gold &mdash; hand-tuned baseline heuristic</li></ul><div class='version-note'>UX-only patches (v0.12.1&ndash;v0.12.5): Web Worker for the gold-chance compute, hover tooltips, panel polish.</div>",
     games: "Games",
     reset: "Reset",
+    // ----- SEO / page intro -----
+    pageIntro:
+      "Free open-source helper for the Metin2 mini-game <strong>Schnapp den K&ouml;nig</strong> / " +
+      "<strong>Catch the King</strong>. " +
+      "Hover a cell on the 5&times;5 board, press the value you see, and the solver suggests the best move every turn " +
+      "&mdash; with live gold-chance and a ~44.8% gold rate at full follow.",
+    supportText:
+      "<strong>This helper will never have ads.</strong> If you want to support the project, you can donate on " +
+      "<a href='https://paypal.me/jogoe' target='_blank' rel='noopener'>PayPal</a> &mdash; every bit truly means a lot. Thank you! &lt;3",
     // ----- disclaimer / help -----
     disclaimerFull:
       "<strong>Work in progress.</strong> The suggestions get noticeably less " +
@@ -163,6 +172,15 @@ const STRINGS = {
     versionHistoryTooltip: "<strong>Versionshistorie</strong><ul class='version-history'><li><b>v0.12.10</b> &mdash; 44.8% Gold &mdash; neues Opener-Muster [6,8,16,18] (Vorschlag von Hanfred) + eigener Sound w&auml;hlbar</li><li><b>v0.12</b> &mdash; 44.0% Gold &mdash; Dead-Line-Filter f&uuml;r Bingos + Suche bis 7 verdeckte Felder, wenn unter dem Ziel</li><li><b>v0.11</b> &mdash; 43.8% Gold &mdash; Endspiel-Suche optimiert P(Score &ge; 550) statt E[Score]</li><li><b>v0.10</b> &mdash; 43.8% Gold &mdash; Bingo-Fortschritts-Bonus (belohnt Z&uuml;ge die Linien voranbringen)</li><li><b>v0.9</b> &mdash; 42.4% Gold &mdash; Exakter Shannon-Informationsgewinn &uuml;ber 5er-Positionen ersetzt heuristische N&auml;herung</li><li><b>v0.8</b> &mdash; 41.9% Gold &mdash; Impressum, Datenschutz, Twitch-Chat-Einwilligungs-Gate</li><li><b>v0.7</b> &mdash; 41.9% Gold &mdash; Chat-Sidebar, Edge-Tab zum Einklappen, Like-Button, Seitenaufruf-Z&auml;hler</li><li><b>v0.6</b> &mdash; 41.9% Gold &mdash; erste Anzeige der Truhen-Quote, Geld-Regen bei 100% Gold-Chance</li><li><b>v0.5</b> &mdash; ~40% Gold &mdash; spreadWeight-Priorit&auml;t, ceiling.mjs + diagnose.mjs als Offline-Werkzeug</li><li><b>v0.4</b> &mdash; ~38% Gold &mdash; Random-Search-Gewichts-Tuning hob die Gold-Rate um ~8pp</li><li><b>v0.3</b> &mdash; benchmark.mjs Selfplay-Harness f&uuml;r Offline-Messungen</li><li><b>v0.2</b> &mdash; Chain-Bonus, K&ouml;nigsjagd-Gewichtung, Fang-Strafe in der 5er-Runde</li><li><b>v0.1</b> &mdash; ~31.6% Gold &mdash; handgetunte Basis-Heuristik</li></ul><div class='version-note'>Reine UI-Updates (v0.12.1&ndash;v0.12.5): Web Worker f&uuml;r die Gold-Berechnung, Hover-Tooltips, Panel-Politur.</div>",
     games: "Spiele",
     reset: "Zurücksetzen",
+    // ----- SEO / Seiten-Intro -----
+    pageIntro:
+      "Kostenloser Open-Source-Helfer f&uuml;r das Metin2-Minispiel <strong>Schnapp den K&ouml;nig</strong> / " +
+      "<strong>Catch the King</strong>. " +
+      "Halte die Maus &uuml;ber ein Feld, dr&uuml;cke den angezeigten Wert, und der Solver schl&auml;gt den besten Zug vor " +
+      "&mdash; mit Live-Gold-Chance und ~44.8% Gold-Quote bei vollst&auml;ndigem Befolgen.",
+    supportText:
+      "<strong>Dieser Helfer wird niemals Werbung enthalten.</strong> Wenn du das Projekt unterst&uuml;tzen m&ouml;chtest, kannst du auf " +
+      "<a href='https://paypal.me/jogoe' target='_blank' rel='noopener'>PayPal</a> spenden &mdash; jede Spende bedeutet mir wirklich viel. Danke! &lt;3",
     // ----- Hinweis / Hilfe -----
     disclaimerFull:
       "<strong>In Arbeit.</strong> Die Vorschläge werden gegen Ende des " +
@@ -294,6 +312,313 @@ const STRINGS = {
     catchRiskReason: ({ pct }) => `Fangrisiko ${pct}%`,
     kHuntReason: ({ bonus }) => `K-Jagd +${bonus}`,
   },
+
+  tr: {
+    solverChestRate: "Çözücünün sandık oranı",
+    gold: "Altın",
+    silver: "Gümüş",
+    bronze: "Bronz",
+    acrossRounds: "100.000 oyun üzerinden",
+    session: "Oturum",
+    globalAllTime: "Herkes (toplam)",
+    games: "Oyunlar",
+    reset: "Sıfırla",
+    pageIntro:
+      "Metin2 mini oyunu <strong>Schnapp den K&ouml;nig</strong> / <strong>Catch the King</strong> " +
+      "(Krall&ı; Yakala) için ücretsiz açık kaynak yardımcı. Bir hücrenin üzerine gelin, gördüğünüz değere basın, " +
+      "ve çözücü her turda en iyi hamleyi önersin &mdash; canlı altın şansı ve tam takiple ~%44.8 altın oranı.",
+    supportText:
+      "<strong>Bu yardımcıda asla reklam olmayacak.</strong> Projeyi desteklemek isterseniz, " +
+      "<a href='https://paypal.me/jogoe' target='_blank' rel='noopener'>PayPal</a> üzerinden bağış yapabilirsiniz &mdash; " +
+      "her destek gerçekten çok şey ifade ediyor. Teşekkürler! &lt;3",
+    disclaimerFull:
+      "<strong>Yapım aşamasında.</strong> Öneriler oyunun sonuna doğru, özellikle az hücre kaldığında belirgin şekilde " +
+      "daha az güvenilir hale gelir. Geç oyunda kendi kararınıza güvenin. Önerilere körü körüne uyduğunuzda " +
+      "soldaki sandık oranlarına bakın.",
+    helpIntro: "Bir hücrenin <strong>üzerine gelin</strong> ve bir tuşa basın:",
+    helpReveal: "<kbd>1</kbd>&ndash;<kbd>5</kbd>, <kbd>K</kbd> veya <kbd>6</kbd> &mdash; açılan değer, <em>parlama yok</em> (komşular güvenli)",
+    helpShift: "<kbd>Shift</kbd> + değer &mdash; açılan değer <em>parlama ile</em> (yakında bir 5 var)",
+    helpClick: "Soluk (puanlanmamış) bir hücreye <strong>tıklayın</strong> &mdash; mevcut el kartıyla yakalayın",
+    helpBackspace: "<kbd>Backspace</kbd> &mdash; son işlemi geri al",
+    helpEsc: "<kbd>Esc</kbd> &mdash; oyunu sıfırla",
+    currentCard: "Mevcut kart",
+    score: "Puan",
+    target550: "hedef 550",
+    remainingOnBoard: "Tahtada kalan",
+    suggestion: "Öneri",
+    undo: "Geri Al",
+    goldChance: "Altın şansı (bu oyun)",
+    goldChanceComputing: "hesaplanıyor…",
+    goldChanceNote: ({ samples }) => `${samples} sezgisel rollout`,
+    goldChanceFinal: ({ score }) => `son puan ${score}`,
+    valueExhausted: ({ value, total }) => `${total} ${value}'in tümü zaten açıldı — daha fazla eklenemez.`,
+    openingReason: "Açılış — yayılı baskın desen (merkez sona saklanır)",
+    likePrompt: "Yardımcıyı beğeniyor musun? Bir beğeni bırak!",
+    twitchChat: "Sohbet",
+    aboutTitle: "Bu proje hakkında",
+    impressum: "Künye",
+    privacy: "Gizlilik",
+    twitchConsentBody:
+      "<b>Twitch sohbetini yüklemek IP'nizi ve çerezlerinizi Twitch'e gönderir.</b> Aşağıya tıklayarak bu bağlantıya onay verirsiniz (gizlilik politikasında istediğiniz zaman geri alınabilir).",
+    twitchConsentBtn: "Twitch sohbetini yükle",
+    twitchConsentRevoked: "Twitch sohbet onayı geri alındı. Uygulamak için sayfayı yenileyin.",
+    customSfxTitle: "Tıkla: özel ses seç · Sağ tık: sıfırla",
+    customSfxSet: "Özel ses kaydedildi.",
+    customSfxReset: "Ses varsayılana sıfırlandı.",
+    customSfxTooBig: "Ses dosyası çok büyük (maks. 4 MB).",
+    footerText: "Metin2 için temiz oda yardımcısı · Schnapp den König",
+    deckExhausted: "Deste tükendi.",
+    hintKingClick: "100 puan için K kartınızı görünür Krala tıklayın.",
+    hintKingFlip: "Kralı tam olarak bir flip ile yakalayın.",
+    hintFive: "5'e komşu hücrelerden kaçının (yakalanırsınız).",
+    hintGeneric: "Kalan en düşük kart otomatik oynanır.",
+    nothingToSuggest: "Önerecek bir şey yok.",
+    suggestionTryHtml: ({ cell, reason }) => `<strong>${cell}</strong> dene &mdash; ${reason}`,
+    gameOverGold: ({ score }) => `Oyun bitti. Son puan ${score}. Hedefe ulaşıldı!`,
+    gameOverOther: ({ score }) => `Oyun bitti. Son puan ${score}.`,
+    ceilingText: ({ ceiling, left }) => `tavan ${ceiling} (+${left} kaldı)`,
+    catchSameValueReason: ({ value, points }) => `Görünür ${value}'i +${points} için yakala (tur biter)`,
+    catchChainReason: ({ value, points }) => `Görünür ${value}'i +${points} için yakala (zincir)`,
+    clickKKingReason: "+100 için K kartınızı bu Kral hücresine tıklayın",
+    kingHereReason: ({ bingoBonus }) => `Kral burada — +100 için yakala${bingoBonus ? ` (+bingo ${bingoBonus})` : ""}`,
+    pKingReason: ({ pct, bingoBonus }) => `P(Kral burada) = %${pct}${bingoBonus ? ` (+bingo ${bingoBonus})` : ""}`,
+    reservedReason: ({ lost }) => `5'lik tur için saklı (${lost} puan kaybeder)`,
+    evReason: ({ ev }) => `E[puan] ≈ ${ev}`,
+    chainReason: ({ pct }) => `zincir %${pct}`,
+    infoReason: ({ bonus }) => `bilgi +${bonus}`,
+    bingoReason: ({ bonus }) => `+${bonus} bingo`,
+    catchRiskReason: ({ pct }) => `yakalanma riski %${pct}`,
+    kHuntReason: ({ bonus }) => `K-avı +${bonus}`,
+  },
+
+  ro: {
+    solverChestRate: "Rata cufărului solverului",
+    gold: "Aur",
+    silver: "Argint",
+    bronze: "Bronz",
+    acrossRounds: "în 100.000 de runde",
+    session: "Sesiune",
+    globalAllTime: "Toți (în total)",
+    games: "Jocuri",
+    reset: "Resetează",
+    pageIntro:
+      "Ajutor gratuit open-source pentru mini-jocul Metin2 <strong>Schnapp den K&ouml;nig</strong> / " +
+      "<strong>Catch the King</strong> (Prinde Regele). Treci cu mouse-ul peste o celulă, apasă valoarea văzută, " +
+      "și solverul îți sugerează cea mai bună mutare la fiecare tură &mdash; cu șansa de aur live și o rată de aur de ~44.8% la urmărire totală.",
+    supportText:
+      "<strong>Acest ajutor nu va avea niciodată reclame.</strong> Dacă vrei să susții proiectul, poți dona pe " +
+      "<a href='https://paypal.me/jogoe' target='_blank' rel='noopener'>PayPal</a> &mdash; orice sprijin contează enorm. Mulțumesc! &lt;3",
+    disclaimerFull:
+      "<strong>În lucru.</strong> Sugestiile devin vizibil mai puțin fiabile spre sfârșitul jocului, mai ales când rămân puține celule. " +
+      "Ai încredere în propria intuiție în finalul jocului. Pentru cei care urmează orbește sugestiile, vezi ratele cufărului din tabelul din stânga.",
+    helpIntro: "<strong>Treci</strong> peste o celulă și apasă o tastă:",
+    helpReveal: "<kbd>1</kbd>&ndash;<kbd>5</kbd>, <kbd>K</kbd> sau <kbd>6</kbd> &mdash; valoare dezvăluită, <em>fără pâlpâire</em> (vecinii sunt în siguranță)",
+    helpShift: "<kbd>Shift</kbd> + valoare &mdash; valoare dezvăluită <em>cu pâlpâire</em> (un 5 este alăturat)",
+    helpClick: "<strong>Click</strong> pe o celulă neașezată (fără punctaj) &mdash; prinde-o cu cartea curentă",
+    helpBackspace: "<kbd>Backspace</kbd> &mdash; anulează ultima acțiune",
+    helpEsc: "<kbd>Esc</kbd> &mdash; resetează jocul",
+    currentCard: "Cartea curentă",
+    score: "Scor",
+    target550: "țintă 550",
+    remainingOnBoard: "Rămase pe tablă",
+    suggestion: "Sugestie",
+    undo: "Anulează",
+    goldChance: "Șansa de aur (acest joc)",
+    goldChanceComputing: "se calculează…",
+    goldChanceNote: ({ samples }) => `${samples} rollout-uri euristice`,
+    goldChanceFinal: ({ score }) => `scor final ${score}`,
+    valueExhausted: ({ value, total }) => `Toate ${total} de ${value} au fost deja dezvăluite — nu se mai pot adăuga.`,
+    openingReason: "Deschidere — model dominant răspândit (centrul rămâne pentru mai târziu)",
+    likePrompt: "Îți place ajutorul? Lasă un like!",
+    twitchChat: "Chat",
+    aboutTitle: "Despre acest proiect",
+    impressum: "Date legale",
+    privacy: "Confidențialitate",
+    twitchConsentBody:
+      "<b>Încărcarea chat-ului Twitch trimite IP-ul și cookie-urile tale către Twitch.</b> Făcând click mai jos, ești de acord cu această conexiune (revocabilă în politica de confidențialitate).",
+    twitchConsentBtn: "Încarcă chat-ul Twitch",
+    twitchConsentRevoked: "Consimțământul pentru chat-ul Twitch a fost revocat. Reîncarcă pagina.",
+    customSfxTitle: "Click: alege sunet personalizat · Click dreapta: resetează",
+    customSfxSet: "Sunet personalizat salvat.",
+    customSfxReset: "Sunet resetat la implicit.",
+    customSfxTooBig: "Fișierul de sunet este prea mare (max. 4 MB).",
+    footerText: "Ajutor clean-room pentru Metin2 · Schnapp den König",
+    deckExhausted: "Pachetul s-a epuizat.",
+    hintKingClick: "Click pe cartea K pe Regele dezvăluit pentru 100 de puncte.",
+    hintKingFlip: "Prinde Regele cu exact un flip.",
+    hintFive: "Evită celulele cu vecini de 5 (te-ar prinde).",
+    hintGeneric: "Cea mai mică carte rămasă se joacă automat.",
+    nothingToSuggest: "Nimic de sugerat.",
+    suggestionTryHtml: ({ cell, reason }) => `Încearcă <strong>${cell}</strong> &mdash; ${reason}`,
+    gameOverGold: ({ score }) => `Joc terminat. Scor final ${score}. Țintă atinsă!`,
+    gameOverOther: ({ score }) => `Joc terminat. Scor final ${score}.`,
+    ceilingText: ({ ceiling, left }) => `plafon ${ceiling} (+${left} rămase)`,
+    catchSameValueReason: ({ value, points }) => `Prinde ${value} dezvăluit pentru +${points} (termină tura)`,
+    catchChainReason: ({ value, points }) => `Prinde ${value} dezvăluit pentru +${points} (lanț)`,
+    clickKKingReason: "Click pe cartea K pe această celulă a Regelui pentru +100",
+    kingHereReason: ({ bingoBonus }) => `Regele este aici — prinde pentru +100${bingoBonus ? ` (+bingo ${bingoBonus})` : ""}`,
+    pKingReason: ({ pct, bingoBonus }) => `P(Regele aici) = ${pct}%${bingoBonus ? ` (+bingo ${bingoBonus})` : ""}`,
+    reservedReason: ({ lost }) => `rezervat pentru tura de 5 (ar pierde ${lost} puncte)`,
+    evReason: ({ ev }) => `E[puncte] ≈ ${ev}`,
+    chainReason: ({ pct }) => `lanț ${pct}%`,
+    infoReason: ({ bonus }) => `info +${bonus}`,
+    bingoReason: ({ bonus }) => `+${bonus} bingo`,
+    catchRiskReason: ({ pct }) => `risc de prindere ${pct}%`,
+    kHuntReason: ({ bonus }) => `vânătoare-K +${bonus}`,
+  },
+
+  es: {
+    solverChestRate: "Tasa de cofres del solver",
+    gold: "Oro",
+    silver: "Plata",
+    bronze: "Bronce",
+    acrossRounds: "a lo largo de 100.000 partidas",
+    session: "Sesión",
+    globalAllTime: "Todos (total)",
+    games: "Partidas",
+    reset: "Reiniciar",
+    pageIntro:
+      "Ayudante gratuito de código abierto para el minijuego de Metin2 <strong>Schnapp den K&ouml;nig</strong> / " +
+      "<strong>Catch the King</strong> (Atrapa al Rey). Pasa el ratón sobre una casilla, pulsa el valor que ves, " +
+      "y el solver te sugiere la mejor jugada en cada turno &mdash; con probabilidad de oro en directo y una tasa de oro del ~44.8% siguiendo todas las sugerencias.",
+    supportText:
+      "<strong>Este ayudante nunca tendrá anuncios.</strong> Si quieres apoyar el proyecto, puedes donar en " +
+      "<a href='https://paypal.me/jogoe' target='_blank' rel='noopener'>PayPal</a> &mdash; cada aporte significa mucho de verdad. ¡Gracias! &lt;3",
+    disclaimerFull:
+      "<strong>En desarrollo.</strong> Las sugerencias se vuelven notablemente menos fiables al final del juego, " +
+      "sobre todo cuando quedan pocas casillas. Confía en tu propio criterio en el juego tardío. " +
+      "Si sigues las sugerencias a ciegas, mira las tasas de cofre en la tabla de la izquierda.",
+    helpIntro: "<strong>Pasa el ratón</strong> sobre una casilla y pulsa una tecla:",
+    helpReveal: "<kbd>1</kbd>&ndash;<kbd>5</kbd>, <kbd>K</kbd> o <kbd>6</kbd> &mdash; valor revelado, <em>sin parpadeo</em> (vecinos seguros)",
+    helpShift: "<kbd>Shift</kbd> + valor &mdash; valor revelado <em>con parpadeo</em> (hay un 5 adyacente)",
+    helpClick: "<strong>Click</strong> en una casilla atenuada (sin puntuar) &mdash; atrápala con la carta actual",
+    helpBackspace: "<kbd>Backspace</kbd> &mdash; deshacer la última acción",
+    helpEsc: "<kbd>Esc</kbd> &mdash; reiniciar el juego",
+    currentCard: "Carta actual",
+    score: "Puntuación",
+    target550: "objetivo 550",
+    remainingOnBoard: "Restantes en el tablero",
+    suggestion: "Sugerencia",
+    undo: "Deshacer",
+    goldChance: "Probabilidad de oro (esta partida)",
+    goldChanceComputing: "calculando…",
+    goldChanceNote: ({ samples }) => `${samples} rollouts heurísticos`,
+    goldChanceFinal: ({ score }) => `puntuación final ${score}`,
+    valueExhausted: ({ value, total }) => `Ya se revelaron los ${total} ${value}s — no se pueden añadir más.`,
+    openingReason: "Apertura — patrón dominante distribuido (deja el centro para después)",
+    likePrompt: "¿Te gusta el ayudante? ¡Dale un like!",
+    twitchChat: "Chat",
+    aboutTitle: "Sobre este proyecto",
+    impressum: "Aviso legal",
+    privacy: "Privacidad",
+    twitchConsentBody:
+      "<b>Cargar el chat de Twitch envía tu IP y cookies a Twitch.</b> Al hacer click abajo aceptas esa conexión (revocable en la política de privacidad).",
+    twitchConsentBtn: "Cargar chat de Twitch",
+    twitchConsentRevoked: "Consentimiento del chat de Twitch revocado. Recarga para aplicar.",
+    customSfxTitle: "Click: elegir sonido personalizado · Click derecho: restablecer",
+    customSfxSet: "Sonido personalizado guardado.",
+    customSfxReset: "Sonido restablecido al predeterminado.",
+    customSfxTooBig: "Archivo de sonido demasiado grande (máx. 4 MB).",
+    footerText: "Ayudante clean-room para Metin2 · Schnapp den König",
+    deckExhausted: "Mazo agotado.",
+    hintKingClick: "Haz click con tu carta K sobre el Rey revelado para sumar 100.",
+    hintKingFlip: "Atrapa al Rey en exactamente un flip.",
+    hintFive: "Evita casillas con vecinos de 5 (te atraparían).",
+    hintGeneric: "La carta más baja restante se juega automáticamente.",
+    nothingToSuggest: "Nada que sugerir.",
+    suggestionTryHtml: ({ cell, reason }) => `Prueba <strong>${cell}</strong> &mdash; ${reason}`,
+    gameOverGold: ({ score }) => `Partida terminada. Puntuación final ${score}. ¡Objetivo alcanzado!`,
+    gameOverOther: ({ score }) => `Partida terminada. Puntuación final ${score}.`,
+    ceilingText: ({ ceiling, left }) => `tope ${ceiling} (+${left} restantes)`,
+    catchSameValueReason: ({ value, points }) => `Atrapa el ${value} revelado por +${points} (termina turno)`,
+    catchChainReason: ({ value, points }) => `Atrapa el ${value} revelado por +${points} (cadena)`,
+    clickKKingReason: "Haz click con tu carta K en esta casilla del Rey por +100",
+    kingHereReason: ({ bingoBonus }) => `El Rey está aquí — atrápalo por +100${bingoBonus ? ` (+bingo ${bingoBonus})` : ""}`,
+    pKingReason: ({ pct, bingoBonus }) => `P(Rey aquí) = ${pct}%${bingoBonus ? ` (+bingo ${bingoBonus})` : ""}`,
+    reservedReason: ({ lost }) => `reservado para turno de 5 (perdería ${lost} puntos)`,
+    evReason: ({ ev }) => `E[puntos] ≈ ${ev}`,
+    chainReason: ({ pct }) => `cadena ${pct}%`,
+    infoReason: ({ bonus }) => `info +${bonus}`,
+    bingoReason: ({ bonus }) => `+${bonus} bingo`,
+    catchRiskReason: ({ pct }) => `riesgo de captura ${pct}%`,
+    kHuntReason: ({ bonus }) => `caza-K +${bonus}`,
+  },
+
+  pl: {
+    solverChestRate: "Wskaźnik skrzyń solvera",
+    gold: "Złoto",
+    silver: "Srebro",
+    bronze: "Brąz",
+    acrossRounds: "w 100.000 rund",
+    session: "Sesja",
+    globalAllTime: "Wszyscy (łącznie)",
+    games: "Gry",
+    reset: "Resetuj",
+    pageIntro:
+      "Darmowy open-source helper do minigry Metin2 <strong>Schnapp den K&ouml;nig</strong> / " +
+      "<strong>Catch the King</strong> (Złap Króla). Najedź na pole, naciśnij widoczną wartość, " +
+      "a solver zaproponuje najlepszy ruch w każdej turze &mdash; z szansą na złoto na żywo i wskaźnikiem złota ~44.8% przy pełnym stosowaniu.",
+    supportText:
+      "<strong>Ten helper nigdy nie będzie miał reklam.</strong> Jeśli chcesz wesprzeć projekt, możesz wpłacić darowiznę przez " +
+      "<a href='https://paypal.me/jogoe' target='_blank' rel='noopener'>PayPal</a> &mdash; każda wpłata naprawdę wiele dla mnie znaczy. Dziękuję! &lt;3",
+    disclaimerFull:
+      "<strong>W toku.</strong> Sugestie stają się zauważalnie mniej wiarygodne pod koniec gry, zwłaszcza gdy zostaje niewiele pól. " +
+      "Zaufaj własnej ocenie w późnej fazie gry. Dla osób ślepo podążających za sugestiami: zobacz wskaźniki skrzyń w lewej tabeli.",
+    helpIntro: "<strong>Najedź</strong> na pole i naciśnij klawisz:",
+    helpReveal: "<kbd>1</kbd>&ndash;<kbd>5</kbd>, <kbd>K</kbd> lub <kbd>6</kbd> &mdash; ujawniona wartość, <em>bez błysku</em> (sąsiedzi bezpieczni)",
+    helpShift: "<kbd>Shift</kbd> + wartość &mdash; ujawniona wartość <em>z błyskiem</em> (5 jest sąsiadem)",
+    helpClick: "<strong>Kliknij</strong> przyciemnione (niepunktowane) pole &mdash; złap je aktualną kartą z ręki",
+    helpBackspace: "<kbd>Backspace</kbd> &mdash; cofnij ostatnią akcję",
+    helpEsc: "<kbd>Esc</kbd> &mdash; resetuj grę",
+    currentCard: "Aktualna karta",
+    score: "Wynik",
+    target550: "cel 550",
+    remainingOnBoard: "Pozostałe na planszy",
+    suggestion: "Sugestia",
+    undo: "Cofnij",
+    goldChance: "Szansa na złoto (ta gra)",
+    goldChanceComputing: "obliczanie…",
+    goldChanceNote: ({ samples }) => `${samples} rolloutów heurystycznych`,
+    goldChanceFinal: ({ score }) => `wynik końcowy ${score}`,
+    valueExhausted: ({ value, total }) => `Wszystkie ${total} kart ${value} są już ujawnione — nie można dodać więcej.`,
+    openingReason: "Otwarcie — rozproszony wzór dominujący (środek na później)",
+    likePrompt: "Podoba ci się helper? Zostaw lajka!",
+    twitchChat: "Czat",
+    aboutTitle: "O tym projekcie",
+    impressum: "Stopka redakcyjna",
+    privacy: "Prywatność",
+    twitchConsentBody:
+      "<b>Ładowanie czatu Twitch wysyła twoje IP i ciasteczka do Twitcha.</b> Klikając poniżej, wyrażasz zgodę na to połączenie (możliwe do cofnięcia w polityce prywatności).",
+    twitchConsentBtn: "Załaduj czat Twitcha",
+    twitchConsentRevoked: "Zgoda na czat Twitcha cofnięta. Odśwież stronę.",
+    customSfxTitle: "Klik: wybierz własny dźwięk · Prawy klik: resetuj",
+    customSfxSet: "Własny dźwięk zapisany.",
+    customSfxReset: "Dźwięk przywrócony do domyślnego.",
+    customSfxTooBig: "Plik dźwiękowy zbyt duży (maks. 4 MB).",
+    footerText: "Clean-room helper do Metin2 · Schnapp den König",
+    deckExhausted: "Talia wyczerpana.",
+    hintKingClick: "Kliknij kartą K na widoczny Króla, żeby zdobyć 100 pkt.",
+    hintKingFlip: "Złap Króla dokładnie jednym flipem.",
+    hintFive: "Unikaj pól z sąsiadami 5 (zostałbyś złapany).",
+    hintGeneric: "Najniższa pozostała karta jest grana automatycznie.",
+    nothingToSuggest: "Brak sugestii.",
+    suggestionTryHtml: ({ cell, reason }) => `Spróbuj <strong>${cell}</strong> &mdash; ${reason}`,
+    gameOverGold: ({ score }) => `Gra zakończona. Wynik końcowy ${score}. Cel osiągnięty!`,
+    gameOverOther: ({ score }) => `Gra zakończona. Wynik końcowy ${score}.`,
+    ceilingText: ({ ceiling, left }) => `pułap ${ceiling} (+${left} pozostało)`,
+    catchSameValueReason: ({ value, points }) => `Złap widoczne ${value} za +${points} (kończy turę)`,
+    catchChainReason: ({ value, points }) => `Złap widoczne ${value} za +${points} (łańcuch)`,
+    clickKKingReason: "Kliknij kartą K na to pole Króla za +100",
+    kingHereReason: ({ bingoBonus }) => `Król jest tutaj — złap za +100${bingoBonus ? ` (+bingo ${bingoBonus})` : ""}`,
+    pKingReason: ({ pct, bingoBonus }) => `P(Król tutaj) = ${pct}%${bingoBonus ? ` (+bingo ${bingoBonus})` : ""}`,
+    reservedReason: ({ lost }) => `zarezerwowane na turę 5 (straci ${lost} pkt)`,
+    evReason: ({ ev }) => `E[pkt] ≈ ${ev}`,
+    chainReason: ({ pct }) => `łańcuch ${pct}%`,
+    infoReason: ({ bonus }) => `info +${bonus}`,
+    bingoReason: ({ bonus }) => `+${bonus} bingo`,
+    catchRiskReason: ({ pct }) => `ryzyko złapania ${pct}%`,
+    kHuntReason: ({ bonus }) => `polowanie-K +${bonus}`,
+  },
 };
 
 const STORAGE_KEY = "ctk-lang-v1";
@@ -309,6 +634,10 @@ function detectInitial() {
   if (typeof navigator !== "undefined") {
     const browser = (navigator.language || "en").toLowerCase();
     if (browser.startsWith("de")) return "de";
+    if (browser.startsWith("tr")) return "tr";
+    if (browser.startsWith("ro")) return "ro";
+    if (browser.startsWith("es")) return "es";
+    if (browser.startsWith("pl")) return "pl";
   }
   return "en";
 }
