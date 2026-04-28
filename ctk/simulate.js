@@ -580,7 +580,23 @@ function playoutWithHeuristic(originalState, world) {
 // it only reports "how's it looking from here?" so the user can see whether
 // they're still on a gold trajectory. Deterministic once the game is over.
 export function computeChestProbabilities(state, options = {}) {
-  const N = options.N ?? 40;
+  // Adaptive N: late-game states have very few moves left so each rollout
+  // is cheap, and they're exactly when the user wants a sharp percentage
+  // (e.g. K-turn with 3 candidates ≈ exactly 1/3 if math is honest, but
+  // N=40 has SE ~7.5pp and would routinely show 25% / 33% / 40%). Scale
+  // up N when there's little left to simulate so the displayed number
+  // is precise enough to trust.
+  let hiddenCount = 0;
+  for (const c of state.cells) if (c.state === "hidden") hiddenCount += 1;
+  // Targeted ~40 ms per call across early-cases by extrapolating from
+  // measured wall-times: per-rollout cost scales with hidden-cell count, so
+  // budgets grow inversely. >12 hidden is left at N=60 because it's already
+  // over the budget at that size (one full game playout per world).
+  const adaptiveN = hiddenCount <= 4 ? 4000
+    : hiddenCount <= 8 ? 1000
+    : hiddenCount <= 12 ? 250
+    : 60;
+  const N = options.N ?? adaptiveN;
   const thresholds = options.thresholds ?? CHEST_THRESHOLDS;
 
   if (isGameOver(state)) {

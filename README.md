@@ -277,6 +277,13 @@ the all-time rate lower than the solver" explainer, panel polish.
   robust winner across seeds; top candidates cluster within ±1 SE.
 - **Worker-thread parallelisation** of bench/tune — only ~2.4× speedup
   on the test machine (HT-limited) and slowed the foreground UI; reverted.
+- **5-resolution bonus (`fiveResolutionWeight`)** — extra binary-entropy
+  reward for flips adjacent to uncertain 5-candidates, motivated by a
+  user-spotted scenario where the helper picked an info-poor cell over an
+  obvious 5-resolving flip. Sweep at n=5000 across w∈{10..100} all lost
+  −0.7 to −1.8pp gold (z up to −1.8), with a clean monotonic decay on
+  silver-band — the global Shannon term already prices the same signal,
+  so adding a parallel one double-counts and disrupts the score balance.
 
 ## Known limits
 

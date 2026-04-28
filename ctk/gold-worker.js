@@ -18,7 +18,7 @@ import { computeChestProbabilities } from "./simulate.js";
 self.onmessage = (e) => {
   const { jobId, state, options } = e.data;
   try {
-    const result = computeChestProbabilities(state, options ?? { N: 40 });
+    const result = computeChestProbabilities(state, options);
     self.postMessage({ jobId, result });
   } catch (err) {
     self.postMessage({ jobId, error: String(err && err.stack || err) });

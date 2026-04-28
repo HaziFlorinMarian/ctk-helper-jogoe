@@ -155,8 +155,17 @@ function main() {
     console.error("usage: node benchmark.mjs [games] [--full-opener]");
     process.exit(1);
   }
-  const opts = fullOpener ? { forceFullOpener: true } : undefined;
-  const tag = fullOpener ? " (forced full opener — early-exit disabled)" : "";
+  const openerArg = args.find((a) => a.startsWith("--opener="));
+  const openerPattern = openerArg
+    ? openerArg.slice("--opener=".length).split(",").map(Number)
+    : null;
+  const opts = (fullOpener || openerPattern) ? {} : undefined;
+  if (fullOpener) opts.forceFullOpener = true;
+  if (openerPattern) opts.openerPattern = openerPattern;
+  const tag = [
+    fullOpener ? " (forced full opener — early-exit disabled)" : "",
+    openerPattern ? ` (opener=[${openerPattern.join(",")}])` : "",
+  ].join("");
   console.log(`Self-playing ${n} games with the heuristic solver${tag}…`);
   const t0 = Date.now();
   const results = [];

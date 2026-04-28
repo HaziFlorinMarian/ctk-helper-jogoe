@@ -685,7 +685,7 @@ function queueGoldChanceUpdate() {
   goldWorker = spawnGoldWorker();
   // structuredClone runs on postMessage; pass the live state object and
   // let the worker boundary serialise it. Sets/Maps survive intact.
-  goldWorker.postMessage({ jobId, state, options: { N: 40 } });
+  goldWorker.postMessage({ jobId, state });
 }
 
 // ---------- solver / refresh ----------
