@@ -685,13 +685,39 @@ function isFreshGame() {
   return true;
 }
 
-function queueGoldChanceUpdate() {
+function queueGoldChanceUpdate(suggestion) {
   const jobId = ++goldJob;
   if (isFreshGame()) {
     els.gameGoldPct.textContent = FRESH_GAME_GOLD_PCT + "%";
     els.gameGoldPct.classList.remove("cold", "hot", "locked");
     els.gameGoldPct.classList.add("warm");
     els.gameGoldNote.textContent = t("acrossRounds");
+    if (goldWorker) { goldWorker.terminate(); goldWorker = null; }
+    return;
+  }
+  // Search-derived shortcut: when the late-game expectimax search has run
+  // and produced an exact P(gold), trust it over PIMC. The search evaluates
+  // the full subgame tree under optimal play, while PIMC's heuristic
+  // playout (run with skipSearch:true to keep rollouts cheap) can't always
+  // find the optimal sequence — it's the difference between "is gold
+  // achievable from here?" and "does the bare heuristic reach gold?".
+  // Skip when search bailed (exhausted budget) since its answer is then a
+  // truncated estimate, not exact.
+  if (
+    suggestion && suggestion.pGold != null && !suggestion.searchExhausted
+    && (suggestion.pGold >= 0.999 || suggestion.pGold <= 0.001)
+  ) {
+    const pGold = suggestion.pGold;
+    els.gameGoldPct.textContent = Math.round(pGold * 100) + "%";
+    els.gameGoldPct.classList.toggle("hot",  pGold >= 0.6);
+    els.gameGoldPct.classList.toggle("warm", pGold >= 0.3 && pGold < 0.6);
+    els.gameGoldPct.classList.toggle("cold", pGold < 0.3);
+    els.gameGoldPct.classList.toggle("locked", pGold >= 0.999);
+    els.gameGoldNote.textContent = `exact search (${Math.round(suggestion.eScore ?? 0)} pts)`;
+    if (!goldRainFired && pGold >= 0.999) {
+      goldRainFired = true;
+      triggerGoldRain();
+    }
     if (goldWorker) { goldWorker.terminate(); goldWorker = null; }
     return;
   }
@@ -719,7 +745,7 @@ function refresh() {
   updateSidebar(els, state, suggestion);
   els.undoBtn.disabled = state.history.length === 0;
   trackGameCompletion();
-  queueGoldChanceUpdate();
+  queueGoldChanceUpdate(suggestion);
 }
 
 renderBoard(boardEl);

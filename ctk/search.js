@@ -291,17 +291,23 @@ export function suggestMoveSearch(state, options = {}) {
   // closely; the remainder approximates E[score]. Good enough for the
   // human-readable reason string.
   let reason;
+  let pGold = null;
+  let eScore = null;
   if (goldMode) {
-    const pGold = Math.min(1, Math.max(0, Math.round(bestEv / GOLD_LEAF_BONUS * 100) / 100));
-    const eScore = Math.max(0, bestEv - pGold * GOLD_LEAF_BONUS);
+    pGold = Math.min(1, Math.max(0, Math.round(bestEv / GOLD_LEAF_BONUS * 100) / 100));
+    eScore = Math.max(0, bestEv - pGold * GOLD_LEAF_BONUS);
     reason = `Gold-priority: P(gold)≈${(pGold*100).toFixed(0)}%, E[score]≈${Math.round(eScore)} (search · ${budget.nodes} nodes)`;
   } else {
     reason = `Expected final ${Math.round(bestEv)} (search · ${budget.nodes} nodes)`;
+    eScore = bestEv;
   }
   return {
     cellIdx: bestMove.idx,
     score: bestEv,
     reason,
     searchExhausted: budget.nodes > budget.cap,
+    pGold,
+    eScore,
+    searchObjective: goldMode ? "gold" : "score",
   };
 }
