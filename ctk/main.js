@@ -112,6 +112,7 @@ if (revokeBtn) {
 const MUTE_KEY = "ctk-mute-v1";
 const MINIMAL_KEY = "ctk-minimal-ui-v1";
 const CHAT_HIDDEN_KEY = "ctk-chat-hidden-v1";
+const LEGACY_STYLE_KEY = "ctk-legacy-style-v1";
 let muted = localStorage.getItem(MUTE_KEY) === "1";
 function applyMute() {
   if (els.muteBtn) els.muteBtn.classList.toggle("off", muted);
@@ -121,13 +122,28 @@ function applyMinimalUi() {
   document.body.classList.toggle("minimal-ui", on);
   if (els.minimalUiBtn) els.minimalUiBtn.classList.toggle("off", on);
 }
+function applyLegacyStyle() {
+  const on = localStorage.getItem(LEGACY_STYLE_KEY) === "1";
+  document.body.classList.toggle("legacy-style", on);
+  const btn = document.getElementById("legacyStyleBtn");
+  if (btn) btn.classList.toggle("off", !on);
+}
 applyMute();
 applyMinimalUi();
+applyLegacyStyle();
 if (els.muteBtn) {
   els.muteBtn.addEventListener("click", () => {
     muted = !muted;
     localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
     applyMute();
+  });
+}
+const legacyStyleBtn = document.getElementById("legacyStyleBtn");
+if (legacyStyleBtn) {
+  legacyStyleBtn.addEventListener("click", () => {
+    const on = localStorage.getItem(LEGACY_STYLE_KEY) !== "1";
+    localStorage.setItem(LEGACY_STYLE_KEY, on ? "1" : "0");
+    applyLegacyStyle();
   });
 }
 
