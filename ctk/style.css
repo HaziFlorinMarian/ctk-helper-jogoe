@@ -369,22 +369,27 @@ body.legacy-style .cell[data-value="K"] { background: rgba(242, 201, 76, 0.1); c
     inset 0 0 0 2px var(--accent);
   animation: pulse 1.3s ease-in-out infinite;
 }
+/* The .unscored opacity dims the whole cell including the HINT badge, making
+ * the suggestion read as muted. Override on the suggested cell so it stays
+ * full-strength regardless of unscored state. */
+.cell.revealed.unscored.suggested { opacity: 1; }
 
 /* Floating "TIPP" pill badge so the suggestion is unmistakable. Sits on the
    top-left corner of the cell, animated with the same pulse rhythm. */
 .cell.suggested::before {
   content: "HINT";
   position: absolute;
-  top: -10px;
+  top: -11px;
   left: -8px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.6px;
-  padding: 2px 7px;
+  padding: 3px 9px;
   background: var(--accent);
   color: #1a1a1a;
+  border: 2px solid #1a1a1a;
   border-radius: 999px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 8px rgba(242, 201, 76, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 12px rgba(242, 201, 76, 0.85);
   z-index: 4;
   pointer-events: none;
   animation: tip-bob 1.3s ease-in-out infinite;
