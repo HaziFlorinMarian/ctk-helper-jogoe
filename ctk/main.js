@@ -833,21 +833,70 @@ bindKeyboard({
     refresh();
   },
   onReset() {
-    flushAbandonedGame();
-    state = createState();
-    lastGameOver = false;
-    goldRainFired = false;
-    refresh();
+    triggerReset();
   },
 });
 
-els.resetBtn.addEventListener("click", () => {
+// Reset with an 8-second undo window. Hitting Reset stashes the prior state
+// and defers the abandoned-game flush; if the user clicks "Undo reset" within
+// the window we restore the snapshot. Otherwise we commit the flush so stats
+// stay accurate.
+const RESET_UNDO_MS = 8000;
+let resetSnapshot = null;
+let resetCommitTimer = 0;
+let resetUndoBtn = null;
+function commitPendingReset() {
+  if (!resetSnapshot) return;
+  const snap = resetSnapshot;
+  resetSnapshot = null;
+  // Restore enough state to flush the abandoned game from its real position.
+  const live = state;
+  const liveLastGameOver = lastGameOver;
+  state = snap.state;
+  lastGameOver = snap.lastGameOver;
   flushAbandonedGame();
+  state = live;
+  lastGameOver = liveLastGameOver;
+  hideResetUndo();
+}
+function hideResetUndo() {
+  if (resetCommitTimer) { clearTimeout(resetCommitTimer); resetCommitTimer = 0; }
+  if (resetUndoBtn && resetUndoBtn.parentNode) resetUndoBtn.parentNode.removeChild(resetUndoBtn);
+  resetUndoBtn = null;
+  els.resetBtn.style.display = "";
+}
+function showResetUndo() {
+  hideResetUndo();
+  resetUndoBtn = document.createElement("button");
+  resetUndoBtn.type = "button";
+  resetUndoBtn.className = "reset-btn reset-undo-btn";
+  resetUndoBtn.textContent = t("undoReset");
+  resetUndoBtn.title = t("undoResetTitle");
+  resetUndoBtn.addEventListener("click", () => {
+    if (!resetSnapshot) return;
+    state = resetSnapshot.state;
+    lastGameOver = resetSnapshot.lastGameOver;
+    goldRainFired = resetSnapshot.goldRainFired;
+    resetSnapshot = null;
+    hideResetUndo();
+    refresh();
+  });
+  // Replace the Reset button in place — same slot, no layout shift.
+  els.resetBtn.parentNode.insertBefore(resetUndoBtn, els.resetBtn);
+  els.resetBtn.style.display = "none";
+  resetCommitTimer = setTimeout(commitPendingReset, RESET_UNDO_MS);
+}
+function triggerReset() {
+  // If a previous reset is still pending, commit it before starting a new one.
+  if (resetSnapshot) commitPendingReset();
+  resetSnapshot = { state, lastGameOver, goldRainFired };
   state = createState();
   lastGameOver = false;
   goldRainFired = false;
   refresh();
-});
+  showResetUndo();
+}
+els.resetBtn.addEventListener("click", triggerReset);
 
 els.undoBtn.addEventListener("click", () => {
   undo(state);

@@ -757,6 +757,30 @@ kbd {
 .action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .reset-btn:hover { background: var(--danger); border-color: var(--danger); }
 
+.reset-undo-btn {
+  background: var(--accent, #f2c94c);
+  color: #1a1a1a;
+  border: 1px solid var(--accent, #f2c94c);
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+}
+.reset-undo-btn:hover { filter: brightness(1.1); background: var(--accent, #f2c94c); border-color: var(--accent, #f2c94c); }
+.reset-undo-btn::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  transform-origin: left;
+  animation: reset-undo-bar 8s linear forwards;
+}
+@keyframes reset-undo-bar {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
 footer {
   padding: 12px 24px;
   border-top: 1px solid var(--border);
