@@ -245,6 +245,357 @@ document.addEventListener("keydown", (e) => {
 const aboutBtn = document.getElementById("aboutBtn");
 if (aboutBtn) aboutBtn.addEventListener("click", () => openModal("aboutModal"));
 
+// ---------- farewell / event-summary modal ----------
+// Shows once on first visit (gated by localStorage flag), reopenable from
+// the header 🎉 button. Renders the user's local session stats + a derived
+// "sets farmed" (games × 5) number, and offers download / copy / share of
+// the captured stat card as a PNG.
+const FAREWELL_SEEN_KEY = "ctk-farewell-seen-v1";
+function populateFarewell() {
+  const s = loadSessionStats();
+  const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = String(v); };
+  const pct = (n, d) => d > 0 ? `(${Math.round(n / d * 100)}%)` : "";
+  const fmt = (n) => Number.isFinite(n) ? n.toLocaleString(undefined) : "…";
+  // Chest tiers shown as CHESTS EARNED (each game awards 5 chests at the
+  // achieved tier), matching how the game distributes rewards in-game.
+  const fmtChests = (n) => Number.isFinite(n) ? (n * 5).toLocaleString(undefined) : "…";
+  setEl("farewellGames", s.games);
+  setEl("farewellGold", fmtChests(s.gold));
+  setEl("farewellSilver", fmtChests(s.silver));
+  setEl("farewellBronze", fmtChests(s.bronze));
+  setEl("farewellSets", s.games * 5);
+  setEl("farewellGoldPct", pct(s.gold, s.games));
+  setEl("farewellSilverPct", pct(s.silver, s.games));
+  setEl("farewellBronzePct", pct(s.bronze, s.games));
+
+  // Global stats from abacus (may still be loading on first render).
+  setEl("farewellGlobalGames", fmt(globalCounts.games));
+  setEl("farewellGlobalGold", fmtChests(globalCounts.gold));
+  setEl("farewellGlobalSilver", fmtChests(globalCounts.silver));
+  setEl("farewellGlobalBronze", fmtChests(globalCounts.bronze));
+  setEl("farewellGlobalSets", Number.isFinite(globalCounts.games)
+    ? fmt(globalCounts.games * 5) : "…");
+  setEl("farewellGlobalGoldPct", pct(globalCounts.gold, globalCounts.games));
+  setEl("farewellGlobalSilverPct", pct(globalCounts.silver, globalCounts.games));
+  setEl("farewellGlobalBronzePct", pct(globalCounts.bronze, globalCounts.games));
+}
+
+// Preload the chest icons once; they're embedded next to the page so the
+// canvas doesn't get tainted when we draw them into the PNG export.
+const chestImgs = {};
+for (const tier of ["gold", "silver", "bronze"]) {
+  const img = new Image();
+  img.src = `img/chest-${tier}.png`;
+  chestImgs[tier] = img;
+}
+function waitForChests() {
+  return Promise.all(Object.values(chestImgs).map((img) =>
+    img.complete && img.naturalWidth > 0
+      ? Promise.resolve()
+      : new Promise((res) => { img.onload = res; img.onerror = res; })
+  ));
+}
+
+// Render an epic shareable wrapped-style card to a 2D canvas. Designed
+// for social-share — portrait 720×1080 with a hero gradient background,
+// big hero number, chest tiles, and watermark. All drawn natively (no DOM
+// taint, no external dep) so toBlob works everywhere.
+async function captureFarewellPng() {
+  await waitForChests();
+  const s = loadSessionStats();
+  const sets = s.games * 5;
+  const fmt = (n) => Number.isFinite(n) ? n.toLocaleString(undefined) : "—";
+  const pct = (n, d) => d > 0 ? `${Math.round(n / d * 100)}%` : "";
+
+  const W = 720, H = 1080;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const canvas = document.createElement("canvas");
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  // ── 1. Background: deep navy with two huge radial bursts + linear sheen.
+  const baseGrad = ctx.createLinearGradient(0, 0, W, H);
+  baseGrad.addColorStop(0, "#1a0b3a");
+  baseGrad.addColorStop(0.55, "#2d1758");
+  baseGrad.addColorStop(1, "#0f0820");
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Purple burst, top-right.
+  const burst1 = ctx.createRadialGradient(W * 0.85, H * 0.12, 0, W * 0.85, H * 0.12, 520);
+  burst1.addColorStop(0, "rgba(196, 102, 255, 0.55)");
+  burst1.addColorStop(1, "rgba(196, 102, 255, 0)");
+  ctx.fillStyle = burst1;
+  ctx.fillRect(0, 0, W, H);
+  // Orange burst, bottom-left.
+  const burst2 = ctx.createRadialGradient(W * 0.10, H * 0.95, 0, W * 0.10, H * 0.95, 560);
+  burst2.addColorStop(0, "rgba(240, 138, 58, 0.45)");
+  burst2.addColorStop(1, "rgba(240, 138, 58, 0)");
+  ctx.fillStyle = burst2;
+  ctx.fillRect(0, 0, W, H);
+  // Top-left magenta highlight.
+  const burst3 = ctx.createRadialGradient(W * 0.15, H * 0.20, 0, W * 0.15, H * 0.20, 380);
+  burst3.addColorStop(0, "rgba(255, 90, 160, 0.32)");
+  burst3.addColorStop(1, "rgba(255, 90, 160, 0)");
+  ctx.fillStyle = burst3;
+  ctx.fillRect(0, 0, W, H);
+
+  // Light grain — small low-alpha dots for texture.
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  for (let i = 0; i < 240; i++) {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(Math.random() * W, Math.random() * H, 1, 1);
+  }
+  ctx.restore();
+
+  // ── 2. Header text.
+  const PAD = 48;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+
+  // Eyebrow
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.font = "700 18px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  const eyebrow = t("farewellEyebrow").toUpperCase();
+  drawSpaced(ctx, eyebrow, PAD, 80, 3);
+
+  // Big title — two lines, vertically aligned.
+  ctx.fillStyle = "#fff";
+  ctx.font = "900 56px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  ctx.fillText(t("farewellHeroGameName"), PAD, 138);
+
+  // Year accent
+  const yearGrad = ctx.createLinearGradient(PAD, 180, PAD + 200, 220);
+  yearGrad.addColorStop(0, "#f2c94c");
+  yearGrad.addColorStop(1, "#f08a3a");
+  ctx.fillStyle = yearGrad;
+  ctx.fillText("2026 WRAPPED", PAD, 200);
+
+  // ── 3. Hero bignum: sets farmed.
+  // Large rounded card with the BIG number.
+  const heroY = 270;
+  const heroH = 230;
+  drawRoundedRect(ctx, PAD, heroY, W - PAD * 2, heroH, 22);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(242, 201, 76, 0.40)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  // Played-sets label near top of card.
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.font = "700 14px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  drawSpaced(ctx, t("farewellPlayedSets").toUpperCase(), W / 2, heroY + 34, 2.5, "center");
+
+  // The huge number, visually centered between the SITZUNG label (top) and
+  // the SETS GEFARMT caption (bottom). textBaseline:"middle" centers the
+  // em-box, but for digit-only strings the actual ink sits higher than the
+  // em-center because there are no descenders. Use measureText's actual
+  // bounding box to put the visual ink center exactly at the target.
+  const setsStr = fmt(sets);
+  ctx.font = "900 120px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  ctx.textBaseline = "alphabetic";
+  ctx.shadowColor = "rgba(242, 201, 76, 0.55)";
+  ctx.shadowBlur = 30;
+  const numGrad = ctx.createLinearGradient(0, heroY + heroH / 2 - 60, 0, heroY + heroH / 2 + 60);
+  numGrad.addColorStop(0, "#fff3b0");
+  numGrad.addColorStop(1, "#f2c94c");
+  ctx.fillStyle = numGrad;
+  // Target visual centre: midway between the top label and the bottom caption.
+  const numTargetY = (heroY + 34 + (heroY + heroH - 28)) / 2;
+  const m = ctx.measureText(setsStr);
+  const ascent = m.actualBoundingBoxAscent || 90;
+  const descent = m.actualBoundingBoxDescent || 0;
+  const baselineY = numTargetY + (ascent - descent) / 2;
+  ctx.fillText(setsStr, W / 2, baselineY);
+  ctx.shadowBlur = 0;
+  ctx.textBaseline = "middle"; // restore for the rest of the painter
+
+  // SETS GEFARMT caption near bottom of card.
+  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+  ctx.font = "700 16px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  drawSpaced(ctx, t("setsFarmed").toUpperCase(), W / 2, heroY + heroH - 28, 1.5, "center");
+
+  // ── 4. Chest tiles — gold/silver/bronze row.
+  const tileY = heroY + heroH + 30;
+  const tileH = 170;
+  const tileGap = 16;
+  const tileW = (W - PAD * 2 - tileGap * 2) / 3;
+
+  const chests = [
+    { tier: "gold",   label: t("gold"),   val: s.gold * 5,   pctVal: pct(s.gold,   s.games), color: "#f2c94c", glow: "rgba(242, 201, 76, 0.45)" },
+    { tier: "silver", label: t("silver"), val: s.silver * 5, pctVal: pct(s.silver, s.games), color: "#dde2ec", glow: "rgba(202, 211, 223, 0.45)" },
+    { tier: "bronze", label: t("bronze"), val: s.bronze * 5, pctVal: pct(s.bronze, s.games), color: "#e09457", glow: "rgba(210, 138, 63, 0.45)" },
+  ];
+
+  for (let i = 0; i < chests.length; i++) {
+    const c = chests[i];
+    const tx = PAD + i * (tileW + tileGap);
+
+    drawRoundedRect(ctx, tx, tileY, tileW, tileH, 18);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+    ctx.fill();
+    // colored accent stroke
+    const tileGrad = ctx.createLinearGradient(tx, tileY, tx, tileY + tileH);
+    tileGrad.addColorStop(0, c.color + "80");
+    tileGrad.addColorStop(1, c.color + "20");
+    ctx.strokeStyle = tileGrad;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const cx = tx + tileW / 2;
+
+    // Chest icon (top) — upscaled 64×64 from the 32×32 wiki source.
+    const img = chestImgs[c.tier];
+    if (img && img.naturalWidth > 0) {
+      ctx.imageSmoothingEnabled = false;
+      const iconSize = 64;
+      ctx.save();
+      ctx.shadowColor = c.glow;
+      ctx.shadowBlur = 14;
+      ctx.drawImage(img, cx - iconSize / 2, tileY + 8, iconSize, iconSize);
+      ctx.restore();
+      ctx.imageSmoothingEnabled = true;
+    }
+
+    // Big value (middle) — chests earned (games × 5).
+    ctx.shadowColor = c.glow;
+    ctx.shadowBlur = 18;
+    ctx.font = "900 42px -apple-system, 'Segoe UI', Roboto, sans-serif";
+    ctx.fillStyle = c.color;
+    ctx.fillText(fmt(c.val), cx, tileY + 100);
+    ctx.shadowBlur = 0;
+
+    // Label
+    ctx.font = "700 13px -apple-system, 'Segoe UI', Roboto, sans-serif";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+    drawSpaced(ctx, c.label.toUpperCase(), cx, tileY + 128, 1.5, "center");
+
+    // pct (bottom)
+    if (c.pctVal) {
+      ctx.font = "400 12px -apple-system, 'Segoe UI', Roboto, sans-serif";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+      ctx.fillText(c.pctVal, cx, tileY + 144);
+    }
+  }
+
+  // ── 5. Games played row.
+  const gamesY = tileY + tileH + 36;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+  ctx.font = "600 12px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  drawSpaced(ctx, t("games").toUpperCase(), W / 2, gamesY, 2, "center");
+  ctx.fillStyle = "#fff";
+  ctx.font = "800 38px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  ctx.fillText(fmt(s.games), W / 2, gamesY + 36);
+
+  // ── 6. Global / community line at bottom.
+  const globalY = gamesY + 86;
+  if (Number.isFinite(globalCounts.games) && globalCounts.games > 0) {
+    const globalH = 90;
+    drawRoundedRect(ctx, PAD, globalY, W - PAD * 2, globalH, 16);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(196, 102, 255, 0.25)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.font = "600 11px -apple-system, 'Segoe UI', Roboto, sans-serif";
+    drawSpaced(ctx, t("globalAllTime").toUpperCase(), PAD + 22, globalY + 28, 1.8);
+
+    ctx.fillStyle = "#e29bd9";
+    ctx.font = "800 26px -apple-system, 'Segoe UI', Roboto, sans-serif";
+    ctx.fillText(fmt(globalCounts.games * 5), PAD + 22, globalY + 60);
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.font = "400 12px -apple-system, 'Segoe UI', Roboto, sans-serif";
+    ctx.fillText(t("setsFarmed").toLowerCase(), W - PAD - 22, globalY + 60);
+  }
+
+  // ── 7. Footer / watermark.
+  const footerY = H - 50;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+  ctx.font = "600 13px -apple-system, 'Segoe UI', Roboto, sans-serif";
+  ctx.fillText("ctk-helper-jogoe", W / 2, footerY);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.30)";
+  ctx.font = "400 11px ui-monospace, 'SF Mono', Menlo, monospace";
+  ctx.fillText("dominikloefflerniteo.github.io/ctk-helper-jogoe/ctk", W / 2, footerY + 22);
+
+  return new Promise((res) => canvas.toBlob((b) => res(b), "image/png"));
+}
+
+// Helpers used by the PNG painter.
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y,     x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x,     y + h, r);
+  ctx.arcTo(x,     y + h, x,     y,     r);
+  ctx.arcTo(x,     y,     x + w, y,     r);
+  ctx.closePath();
+}
+function drawSpaced(ctx, text, x, y, spacing, align = "left") {
+  // Manual letter-spacing — measure each char, advance by width+spacing.
+  const chars = [...text];
+  const widths = chars.map((c) => ctx.measureText(c).width);
+  const total = widths.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1);
+  let cur = align === "center" ? x - total / 2 : align === "right" ? x - total : x;
+  for (let i = 0; i < chars.length; i++) {
+    ctx.textAlign = "left";
+    ctx.fillText(chars[i], cur, y);
+    cur += widths[i] + spacing;
+  }
+}
+
+const farewellBtn = document.getElementById("farewellBtn");
+if (farewellBtn) {
+  farewellBtn.addEventListener("click", () => {
+    populateFarewell();
+    openModal("farewellModal");
+  });
+}
+// Auto-open every page load — small defer so the page paints first.
+setTimeout(() => {
+  populateFarewell();
+  openModal("farewellModal");
+}, 300);
+
+document.getElementById("farewellDownloadBtn")?.addEventListener("click", async () => {
+  const blob = await captureFarewellPng();
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ctk-event-stats.png";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+document.getElementById("farewellCopyBtn")?.addEventListener("click", async () => {
+  try {
+    const blob = await captureFarewellPng();
+    if (!blob) throw new Error("no blob");
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    showToast(t("farewellCopied"));
+  } catch (e) {
+    showToast(t("farewellCopyFailed"));
+  }
+});
+
 // ---------- like button (free public counter API) ----------
 // abacus.jasoncameron.dev hosts a stateless counter. /get returns the value;
 // /hit increments and returns the new value. localStorage gates the click so

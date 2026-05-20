@@ -61,6 +61,9 @@
           <button id="minimalUiBtn" class="icon-toggle" type="button" aria-label="Toggle minimal UI" title="Toggle minimal UI">
             <span class="icon-on">▦</span><span class="icon-off">□</span>
           </button>
+          <button id="farewellBtn" class="icon-toggle" type="button" aria-label="View event summary" title="View event summary" data-i18n-title="farewellOpenTitle">
+            <span class="icon-on">🎉</span><span class="icon-off">🎉</span>
+          </button>
           <button id="aboutBtn" class="icon-toggle" type="button" aria-label="About this project" title="About this project">
             <span class="icon-on">?</span><span class="icon-off">?</span>
           </button>
@@ -75,7 +78,7 @@
         </div>
       </div>
       <span class="discord">discord: @jogoe</span>
-      <span class="version">v0.12.30 - 2026/05/04 13:10<span class="version-views" id="versionViews"></span><span class="info-hint info-hint-version" tabindex="0" aria-label="Version history">?<span class="info-hint-tooltip info-hint-tooltip-version" data-i18n-html="versionHistoryTooltip"></span></span></span>
+      <span class="version">v0.13.9 - 2026/05/04 17:00<span class="version-views" id="versionViews"></span><span class="info-hint info-hint-version" tabindex="0" aria-label="Version history">?<span class="info-hint-tooltip info-hint-tooltip-version" data-i18n-html="versionHistoryTooltip"></span></span></span>
     </div>
   </header>
 
@@ -443,6 +446,111 @@
   <button id="chatBtn" class="chat-tab" type="button" aria-label="Toggle chat" title="Toggle chat">
     <span class="chat-tab-arrow"></span>
   </button>
+
+  <div id="farewellModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="farewellTitle" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card farewell-card" tabindex="-1">
+      <button class="modal-close" type="button" aria-label="Close" data-close>&times;</button>
+      <div id="farewellCardCapture" class="farewell-capture">
+
+        <div class="farewell-hero">
+          <div class="farewell-hero-eyebrow" data-i18n="farewellEyebrow">Your Catch the King 2026 wrapped</div>
+          <h2 id="farewellTitle" class="farewell-hero-title" data-i18n="farewellTitle">Thanks for playing!</h2>
+          <p data-i18n-html="farewellIntro" class="farewell-hero-intro">
+            Hope this helper made the <strong>Catch the King</strong> event a bit easier for you.
+          </p>
+        </div>
+
+        <div class="farewell-columns">
+          <div class="farewell-section">
+            <div class="farewell-section-label" data-i18n="farewellPlayedSets">Your played sets</div>
+
+            <div class="farewell-bignum">
+              <div class="farewell-bignum-val" id="farewellSets">0</div>
+              <div class="farewell-bignum-cap" data-i18n="setsFarmed">Sets farmed (games × 5)</div>
+            </div>
+
+            <div class="farewell-grid">
+              <div class="farewell-tile tone-default">
+                <img class="farewell-tile-icon" src="img/deck.png" alt="King's Deck" />
+                <div class="farewell-tile-val" id="farewellGames">0</div>
+                <div class="farewell-tile-label" data-i18n="games">Games</div>
+              </div>
+              <div class="farewell-tile tone-gold">
+                <img class="farewell-tile-icon" src="img/chest-gold.png" alt="Gold chest" />
+                <div class="farewell-tile-val"><span id="farewellGold">0</span> <span id="farewellGoldPct" class="farewell-tile-pct"></span></div>
+                <div class="farewell-tile-label" data-i18n="gold">Gold</div>
+              </div>
+              <div class="farewell-tile tone-silver">
+                <img class="farewell-tile-icon" src="img/chest-silver.png" alt="Silver chest" />
+                <div class="farewell-tile-val"><span id="farewellSilver">0</span> <span id="farewellSilverPct" class="farewell-tile-pct"></span></div>
+                <div class="farewell-tile-label" data-i18n="silver">Silver</div>
+              </div>
+              <div class="farewell-tile tone-bronze">
+                <img class="farewell-tile-icon" src="img/chest-bronze.png" alt="Bronze chest" />
+                <div class="farewell-tile-val"><span id="farewellBronze">0</span> <span id="farewellBronzePct" class="farewell-tile-pct"></span></div>
+                <div class="farewell-tile-label" data-i18n="bronze">Bronze</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="farewell-section">
+            <div class="farewell-section-label" data-i18n="globalAllTime">Everyone (all time)</div>
+
+            <div class="farewell-bignum farewell-bignum-secondary">
+              <div class="farewell-bignum-val" id="farewellGlobalSets">…</div>
+              <div class="farewell-bignum-cap" data-i18n="setsFarmed">Sets farmed (games × 5)</div>
+            </div>
+
+            <div class="farewell-grid">
+              <div class="farewell-tile tone-default">
+                <img class="farewell-tile-icon" src="img/deck.png" alt="King's Deck" />
+                <div class="farewell-tile-val" id="farewellGlobalGames">…</div>
+                <div class="farewell-tile-label" data-i18n="games">Games</div>
+              </div>
+              <div class="farewell-tile tone-gold">
+                <img class="farewell-tile-icon" src="img/chest-gold.png" alt="Gold chest" />
+                <div class="farewell-tile-val"><span id="farewellGlobalGold">…</span> <span id="farewellGlobalGoldPct" class="farewell-tile-pct"></span></div>
+                <div class="farewell-tile-label" data-i18n="gold">Gold</div>
+              </div>
+              <div class="farewell-tile tone-silver">
+                <img class="farewell-tile-icon" src="img/chest-silver.png" alt="Silver chest" />
+                <div class="farewell-tile-val"><span id="farewellGlobalSilver">…</span> <span id="farewellGlobalSilverPct" class="farewell-tile-pct"></span></div>
+                <div class="farewell-tile-label" data-i18n="silver">Silver</div>
+              </div>
+              <div class="farewell-tile tone-bronze">
+                <img class="farewell-tile-icon" src="img/chest-bronze.png" alt="Bronze chest" />
+                <div class="farewell-tile-val"><span id="farewellGlobalBronze">…</span> <span id="farewellGlobalBronzePct" class="farewell-tile-pct"></span></div>
+                <div class="farewell-tile-label" data-i18n="bronze">Bronze</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="farewell-cta-row">
+        <div class="farewell-share-cta">
+          <div class="farewell-cta-title" data-i18n="farewellShareTitle">Brag a little!</div>
+          <div class="farewell-cta-body" data-i18n="farewellShareBody">Save your wrapped &amp; share it with the discord — let your friends see what you pulled off.</div>
+          <div class="farewell-actions">
+            <button id="farewellDownloadBtn" class="farewell-download" type="button" data-i18n="farewellDownload">⬇  Download PNG</button>
+            <button id="farewellCopyBtn" class="farewell-copy" type="button" data-i18n="farewellCopy">📋  Copy image</button>
+          </div>
+        </div>
+
+        <div class="farewell-donate-cta">
+          <div class="farewell-cta-title farewell-cta-title-gold" data-i18n="farewellDonateTitle">Did the helper help you?</div>
+          <div class="farewell-cta-body" data-i18n-html="farewellDonate">
+            This site will always stay ad-free &mdash; I&rsquo;m just genuinely happy you used it. If you&rsquo;d like to throw a coin in the hat, a tip on <a href="https://paypal.me/jogoe" target="_blank" rel="noopener">PayPal</a> means a lot.
+          </div>
+          <a class="farewell-donate-btn" href="https://paypal.me/jogoe" target="_blank" rel="noopener" data-i18n="farewellDonateBtn">💛  Tip on PayPal</a>
+        </div>
+      </div>
+
+      <p class="farewell-outro" data-i18n="farewellOutro">Looking forward to next year — it was a pleasure. &lt;3</p>
+    </div>
+  </div>
 
   <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutTitle" hidden>
     <div class="modal-backdrop" data-close></div>
