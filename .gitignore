@@ -1,1 +1,7 @@
 /.claude
+ctk/bench/bench-opener-overnight-250k.progress
+ctk/bench/bench-opener-overnight-250k.log
+ctk/bench/bench-hanfred-true-100k.log
+ctk/bench/bench-hanfred-opener-100k.log
+ctk/bench/bench-deadline-30k.log
+ctk/bench/bench-deadline-100k.log

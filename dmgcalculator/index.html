@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metin2 Damage Calculator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Metin2 Damage Calculator</h1>
+    <div class="actions">
+      <button id="btn-export" class="btn ghost">Export</button>
+      <button id="btn-import" class="btn ghost">Import</button>
+      <input type="file" id="file-import" accept="application/json" hidden />
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- ====== CHARACTER MANAGEMENT ====== -->
+    <section class="section">
+      <h2 class="section-title">Character Management</h2>
+      <div class="two-col">
+        <div class="card">
+          <h3>Character List</h3>
+          <button id="btn-new-char" class="btn primary block">+ Create a Character</button>
+          <ul id="char-list" class="entity-list"></ul>
+
+          <h3 style="margin-top:18px">Monster List</h3>
+          <div class="row">
+            <button id="btn-pick-monster" class="btn ghost small">🐗 Monsters</button>
+            <button id="btn-pick-stone" class="btn ghost small">🗿 Stones</button>
+          </div>
+          <ul id="mob-list" class="entity-list"></ul>
+        </div>
+
+        <div class="card">
+          <h3>Edit a Character</h3>
+          <div id="edit-empty" class="empty">Select a character to edit, or create one.</div>
+          <form id="edit-form" class="hidden">
+            <div class="grid">
+              <label>Name <input type="text" data-f="name" /></label>
+              <label>Class
+                <select data-f="cls">
+                  <option value="warrior_body">Warrior · Body</option>
+                  <option value="warrior_mental">Warrior · Mental</option>
+                  <option value="ninja_blade">Ninja · Blade</option>
+                  <option value="ninja_bow">Ninja · Bow</option>
+                  <option value="sura_weapon">Sura · Weapon</option>
+                  <option value="sura_black_magic">Sura · Black Magic</option>
+                  <option value="shaman_dragon">Shaman · Dragon</option>
+                  <option value="shaman_healing">Shaman · Healing</option>
+                  <option value="lycan">Lycan</option>
+                </select>
+              </label>
+              <label>Level <input type="number" data-f="level" min="1" max="120" value="120" /></label>
+              <label>STR <input type="number" data-f="str" min="0" value="90" /></label>
+              <label>DEX <input type="number" data-f="dex" min="0" value="48" /></label>
+              <label>VIT <input type="number" data-f="vit" min="0" value="48" /></label>
+              <label>INT <input type="number" data-f="int" min="0" value="48" /></label>
+            </div>
+
+            <details open>
+              <summary>Weapon</summary>
+              <div class="grid">
+                <label>Type
+                  <select data-f="wpnType">
+                    <option value="sword_1h">Sword (1H)</option>
+                    <option value="sword_2h">Sword (2H)</option>
+                    <option value="dagger">Dagger</option>
+                    <option value="bow">Bow</option>
+                    <option value="bell">Bell</option>
+                    <option value="fan">Fan</option>
+                    <option value="claw">Claw</option>
+                  </select>
+                </label>
+                <label>Min ATK <input type="number" data-f="wpnMin" min="0" value="120" /></label>
+                <label>Max ATK <input type="number" data-f="wpnMax" min="0" value="180" /></label>
+                <label>Magic ATK <input type="number" data-f="wpnMagic" min="0" value="0" /></label>
+                <label>Refine +0–9 <input type="number" data-f="wpnRefine" min="0" max="9" value="9" /></label>
+                <label>Weapon ATK Value <input type="number" data-f="wpnAtkVal" min="0" value="60" /></label>
+              </div>
+            </details>
+
+            <details>
+              <summary>Defense (when being attacked)</summary>
+              <div class="grid">
+                <label>HP <input type="number" data-f="hp" min="1" value="5000" /></label>
+                <label>Defense <input type="number" data-f="def" min="0" value="400" /></label>
+                <label>Magic Defense <input type="number" data-f="mdef" min="0" value="200" /></label>
+                <label>Damage Reduction % <input type="number" data-f="dr" min="0" max="100" value="0" /></label>
+              </div>
+              <h4>Elemental Resistance %</h4>
+              <div class="grid grid-tight">
+                <label>Fire <input type="number" data-f="rFire" value="0" /></label>
+                <label>Ice <input type="number" data-f="rIce" value="0" /></label>
+                <label>Lightning <input type="number" data-f="rLightning" value="0" /></label>
+                <label>Wind <input type="number" data-f="rWind" value="0" /></label>
+                <label>Earth <input type="number" data-f="rEarth" value="0" /></label>
+                <label>Dark <input type="number" data-f="rDark" value="0" /></label>
+              </div>
+            </details>
+
+            <details>
+              <summary>Offensive Bonuses</summary>
+              <div class="grid">
+                <label>Average DMG % <input type="number" data-f="bAvg" value="20" /></label>
+                <label>Skill DMG % <input type="number" data-f="bSkill" value="20" /></label>
+                <label>ATK Value % <input type="number" data-f="bAtkPct" value="9" /></label>
+                <label>ATK Value flat <input type="number" data-f="bAtkFlat" value="40" /></label>
+                <label>Strong vs Monsters % <input type="number" data-f="bMonsters" value="20" /></label>
+                <label>Strong vs Bosses % <input type="number" data-f="bBoss" value="0" /></label>
+                <label>Strong vs Metins % <input type="number" data-f="bMetin" value="20" /></label>
+                <label>Critical % <input type="number" data-f="bCrit" min="0" max="100" value="10" /></label>
+                <label>Piercing % <input type="number" data-f="bPierce" min="0" max="100" value="10" /></label>
+              </div>
+              <h4>Race Bonuses %</h4>
+              <div class="grid grid-tight">
+                <label>Humans <input type="number" data-f="bRHuman" value="0" /></label>
+                <label>Animals <input type="number" data-f="bRAnimal" value="0" /></label>
+                <label>Orcs <input type="number" data-f="bROrc" value="0" /></label>
+                <label>Mystics <input type="number" data-f="bRMystic" value="0" /></label>
+                <label>Undead <input type="number" data-f="bRUndead" value="0" /></label>
+                <label>Devils <input type="number" data-f="bRDevil" value="0" /></label>
+              </div>
+              <h4>Elemental ATK (flat)</h4>
+              <div class="grid grid-tight">
+                <label>Fire <input type="number" data-f="eFire" value="0" /></label>
+                <label>Ice <input type="number" data-f="eIce" value="0" /></label>
+                <label>Lightning <input type="number" data-f="eLightning" value="0" /></label>
+                <label>Wind <input type="number" data-f="eWind" value="0" /></label>
+                <label>Earth <input type="number" data-f="eEarth" value="0" /></label>
+                <label>Dark <input type="number" data-f="eDark" value="0" /></label>
+              </div>
+            </details>
+
+            <div class="form-actions">
+              <button type="button" id="btn-duplicate" class="btn ghost">Duplicate</button>
+              <button type="button" id="btn-delete" class="btn danger">Delete</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== BATTLE CREATION ====== -->
+    <section class="section">
+      <h2 class="section-title">Battle Creation</h2>
+      <div class="battle-area">
+        <div class="combatant" id="slot-attacker" data-role="attacker">
+          <div class="combatant-placeholder">+</div>
+          <div class="combatant-label">Who deals the damage?</div>
+        </div>
+
+        <div class="battle-center">
+          <div class="label-muted">Choose an attack</div>
+          <div class="attack-picker">
+            <button class="atk-btn active" data-mode="normal" title="Normal hit">⚔</button>
+            <button class="atk-btn" data-mode="skill" title="Skill">✦</button>
+            <button class="atk-btn" data-mode="mounted" title="Mounted">🐎</button>
+          </div>
+          <div class="skill-extras" id="skill-extras" style="display:none">
+            <label>Power % <input type="number" id="skill-power" min="0" value="100" /></label>
+            <label>Grade
+              <select id="skill-grade">
+                <option value="1">P</option>
+                <option value="1.2">G</option>
+                <option value="1.4">M1</option>
+                <option value="1.6">M2</option>
+                <option value="2">M3</option>
+              </select>
+            </label>
+          </div>
+          <button id="btn-simulate" class="btn primary big">⚔ Simulate the Battle</button>
+        </div>
+
+        <div class="combatant" id="slot-defender" data-role="defender">
+          <div class="combatant-placeholder">+</div>
+          <div class="combatant-label">Who takes the damage?</div>
+        </div>
+      </div>
+
+      <!-- Latest result -->
+      <div id="latest-result" class="result-card hidden">
+        <div class="stat">
+          <span class="label">Min</span>
+          <span id="out-min" class="value">—</span>
+        </div>
+        <div class="stat">
+          <span class="label">Average</span>
+          <span id="out-avg" class="value big">—</span>
+        </div>
+        <div class="stat">
+          <span class="label">Max</span>
+          <span id="out-max" class="value">—</span>
+        </div>
+        <div class="stat">
+          <span class="label">Crit (max)</span>
+          <span id="out-crit" class="value">—</span>
+        </div>
+        <div class="stat">
+          <span class="label">Hits to kill</span>
+          <span id="out-htk" class="value">—</span>
+        </div>
+        <canvas id="chart"></canvas>
+      </div>
+    </section>
+
+    <!-- ====== BATTLE HISTORY ====== -->
+    <section class="section">
+      <h2 class="section-title">Battle History</h2>
+      <div class="card no-pad">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Attacker</th>
+              <th>Opponent</th>
+              <th>Attack</th>
+              <th>Average</th>
+              <th>Min</th>
+              <th>Max</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr id="history-empty">
+              <td colspan="7" class="empty">No battle yet — pick two combatants and hit <em>Simulate the Battle</em>.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="history-actions">
+          <button id="btn-clear-history" class="btn ghost small">Clear history</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Combatant picker modal -->
+  <div id="picker" class="modal hidden">
+    <div class="modal-content">
+      <h3>Select a combatant</h3>
+      <div id="picker-list" class="picker-list"></div>
+      <button id="picker-close" class="btn ghost block">Cancel</button>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <p>Clean-room reimplementation inspired by the Metin2 community damage simulator. Formulas approximate — small differences from live are expected.</p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="calc.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
