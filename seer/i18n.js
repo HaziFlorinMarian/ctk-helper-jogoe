@@ -94,17 +94,18 @@ const STRINGS = {
     // stats panel
     statsTitle: "Does the helper actually help?",
     statsLead:
-      "Measured over <strong>100,000 simulated duels</strong> (computer plays a random card order). " +
+      "The helper now plays the <strong>exact optimal</strong> card (full belief-state solve, not a heuristic). " +
+      "Measured over <strong>100,000 simulated duels</strong> vs a random-order computer. " +
       "Coins = 1 per round you win, plus the point difference as a bonus when you win the duel.",
     scPcTag: "🤖 Computer starts",
     scPcSub: "duels won with the helper",
-    scPcCmp: "vs 39% guessing · ≈ 5.2 coins/game (+0.6)",
+    scPcCmp: "vs 39% guessing · ≈ 5.4 coins/game · mathematically optimal",
     scMeTag: "🫵 You start",
     scMeSub: "helper = clicking blindly",
     scMeCmp: "order is mathematically irrelevant — don't overthink it",
     scMixTag: "🎲 50 / 50 mix",
     scMixSub: "duels won with the helper",
-    scMixCmp: "vs 39% guessing · ≈ 4.9 coins/game (+0.3)",
+    scMixCmp: "vs 39% guessing · ≈ 5.0 coins/game",
     realCase: "★ what actually happens in-game",
     statsFoot:
       "Bottom line: the helper's edge is entirely in the rounds where the computer leads and you can " +
@@ -201,17 +202,18 @@ const STRINGS = {
 
     statsTitle: "Bringt der Helfer wirklich was?",
     statsLead:
-      "Gemessen über <strong>100.000 simulierte Duelle</strong> (Computer spielt zufällige Reihenfolge). " +
+      "Der Helfer spielt jetzt die <strong>exakt optimale</strong> Karte (vollständige Belief-State-Lösung, keine Heuristik). " +
+      "Gemessen über <strong>100.000 simulierte Duelle</strong> gegen einen Computer mit zufälliger Reihenfolge. " +
       "Münzen = 1 pro gewonnener Runde, plus die Punktedifferenz als Bonus, wenn du das Duell gewinnst.",
     scPcTag: "🤖 Computer beginnt",
     scPcSub: "Duelle mit Helfer gewonnen",
-    scPcCmp: "statt 39% Raten · ≈ 5,2 Münzen/Spiel (+0,6)",
+    scPcCmp: "statt 39% Raten · ≈ 5,4 Münzen/Spiel · mathematisch optimal",
     scMeTag: "🫵 Du beginnst",
     scMeSub: "Helfer = blind klicken",
     scMeCmp: "Reihenfolge ist mathematisch egal — nicht überdenken",
     scMixTag: "🎲 50 / 50 gemischt",
     scMixSub: "Duelle mit Helfer gewonnen",
-    scMixCmp: "statt 39% Raten · ≈ 4,9 Münzen/Spiel (+0,3)",
+    scMixCmp: "statt 39% Raten · ≈ 5,0 Münzen/Spiel",
     realCase: "★ der echte Fall im Spiel",
     statsFoot:
       "Fazit: Der Vorteil des Helfers liegt komplett in den Runden, in denen der Computer beginnt und du " +
