@@ -7,64 +7,103 @@ function targetKind(t) {
   return "player";
 }
 
+// Map defender race string to the attacker bonus field that boosts vs that race.
+const RACE_TO_BONUS = {
+  human:   "strongHalfHumans",
+  animal:  "strongAnimals",
+  orc:     "strongOrcs",
+  mystic:  "strongMystics",
+  undead:  "strongUndead",
+  devil:   "strongDevils",
+  insect:  "strongInsects",
+  desert:  "strongDesert",
+  zodiac:  "strongZodiac",
+  dragon:  "strongDragons",
+};
+
+const num = (o, k) => Number(o[k]) || 0;
+
 function rollDamage(attacker, defender, attack, opts = {}) {
   const cls = CLASSES[attacker.cls] || CLASSES.warrior_body;
   const useMagic = cls.magic;
   const refine = REFINE_MULT[Math.max(0, Math.min(9, attacker.wpnRefine | 0))];
 
-  const statAtk = cls.strCoef * attacker.str + (useMagic ? 2 * attacker.int : 0);
-  const wMin = attacker.wpnMin * refine;
-  const wMax = attacker.wpnMax * refine;
+  const statAtk = cls.strCoef * num(attacker, "str") + (useMagic ? 2 * num(attacker, "int") : 0);
+  const wMin = num(attacker, "wpnMin") * refine;
+  const wMax = num(attacker, "wpnMax") * refine;
   const wRoll = opts.fixed === "min" ? wMin
               : opts.fixed === "max" ? wMax
               : wMin + Math.random() * (wMax - wMin);
-  const magicRoll = useMagic ? attacker.wpnMagic * refine : 0;
+  const magicRoll = useMagic ? num(attacker, "wpnMagic") * refine : 0;
 
-  const flat = attacker.bAtkFlat + attacker.wpnAtkVal;
+  // Flat attack: Attack Value (bonus) + weapon attack value + melee/magic attack flat.
+  const flat = num(attacker, "atkValueFlat")
+             + num(attacker, "meleeMagicAtk")
+             + (useMagic ? num(attacker, "magicAtk") + num(attacker, "magicAtkBonus") : 0);
 
-  // Elemental flat vs target resistances (defender may not define resistances → 0).
+  // Elemental "Power of X" flat, reduced by defender's elemental resistance %.
+  const elemPairs = [
+    ["powFire", "resFire"], ["powIce", "resIce"], ["powLightning", "resLightning"],
+    ["powWind", "resWind"], ["powEarth", "resEarth"], ["powDark", "resDark"],
+  ];
   let elemFlat = 0;
-  for (const e of ELEMENTS) {
-    const flatBonus = attacker["e" + cap(e)] || 0;
-    const resist = defender["r" + cap(e)] || 0;
-    elemFlat += flatBonus * (1 - resist / 100);
+  for (const [pk, rk] of elemPairs) {
+    elemFlat += num(attacker, pk) * (1 - num(defender, rk) / 100);
   }
 
   let atk = statAtk + wRoll + magicRoll + flat + elemFlat;
-  atk *= 1 + attacker.bAtkPct / 100;
+  atk *= 1 + num(attacker, "atkValuePct") / 100;
 
-  // Attack mode.
+  // Attack mode multipliers.
   if (attack.mode === "skill") {
     atk *= (attack.power / 100) * attack.grade;
-    atk *= 1 + attacker.bSkill / 100;
+    atk *= 1 + num(attacker, "skillDamage") / 100;
+    atk *= 1 - num(defender, "resSkillDamage") / 100;
   } else {
-    atk *= 1 + attacker.bAvg / 100;
+    atk *= 1 + num(attacker, "avgDamage") / 100;
+    atk *= 1 - num(defender, "resAvgDamage") / 100;
   }
 
-  // Target type.
+  // Target type bonuses.
   const tk = targetKind(defender);
-  if (tk === "monster") atk *= 1 + attacker.bMonsters / 100;
-  if (tk === "boss")    atk *= 1 + (attacker.bMonsters + attacker.bBoss) / 100;
-  if (tk === "metin")   atk *= 1 + attacker.bMetin / 100;
+  if (tk === "monster" || tk === "boss") {
+    atk *= 1 + num(attacker, "strongMonsters") / 100;
+  }
+  if (tk === "boss") {
+    if (attack.mode === "skill") atk *= 1 + num(attacker, "bossDmgSkill") / 100;
+    else                          atk *= 1 + num(attacker, "bossDmgAtk")   / 100;
+  }
+  if (tk === "metin") atk *= 1 + num(attacker, "strongMetin") / 100;
 
-  // Race bonus.
+  // Race bonus (defender.race -> attacker bonus field).
   const race = defender.race;
-  if (race && race !== "none") {
-    const racePct = attacker["bR" + cap(race)] || 0;
-    atk *= 1 + racePct / 100;
+  const raceField = RACE_TO_BONUS[race];
+  if (raceField) atk *= 1 + num(attacker, raceField) / 100;
+
+  // Magic-attack defender penalty: magic resistance / anti-magic reduce magic atk.
+  if (useMagic) {
+    atk *= 1 - num(defender, "magicResistance") / 100;
+    atk *= 1 - num(defender, "antiMagic") / 100;
   }
 
-  const def = useMagic ? (defender.mdef || 0) : (defender.def || 0);
-  let dmg = atk - def;
+  // Subtract defender defense. Mobs use `def`/`mdef`; characters use `defValueFlat`.
+  const physDef = (defender.def !== undefined ? defender.def : num(defender, "defValueFlat"));
+  const magDef  = (defender.mdef !== undefined ? defender.mdef : num(defender, "defValueFlat"));
+  let defVal = (useMagic ? magDef : physDef) * (1 + num(defender, "defValuePct") / 100);
+
+  let dmg = atk - defVal;
   if (dmg < 1) dmg = 1;
-  dmg *= 1 - (defender.dr || 0) / 100;
+  dmg *= 1 - num(defender, "dr") / 100;
 
   let critted = false, pierced = false;
-  if (opts.proc === "crit") { dmg *= 2; critted = true; }
-  else if (opts.proc === "pierce") { dmg += def * (1 - (defender.dr || 0) / 100); pierced = true; }
+  const critChance  = Math.max(0, num(attacker, "critChance")   - num(defender, "resCrit"));
+  const pierceChance= Math.max(0, num(attacker, "piercingHit")  - num(defender, "resPierce"));
+
+  if (opts.proc === "crit")   { dmg *= 2; critted = true; }
+  else if (opts.proc === "pierce") { dmg += defVal * (1 - num(defender, "dr") / 100); pierced = true; }
   else if (!opts.noProc) {
-    if (Math.random() * 100 < attacker.bCrit)   { dmg *= 2; critted = true; }
-    if (Math.random() * 100 < attacker.bPierce) { dmg += def * (1 - (defender.dr || 0) / 100); pierced = true; }
+    if (Math.random() * 100 < critChance)   { dmg *= 2; critted = true; }
+    if (Math.random() * 100 < pierceChance) { dmg += defVal * (1 - num(defender, "dr") / 100); pierced = true; }
   }
 
   return { dmg: Math.max(1, Math.round(dmg)), critted, pierced };

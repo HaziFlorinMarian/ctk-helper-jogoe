@@ -3,16 +3,84 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catch the King helper</title>
-  <meta http-equiv="refresh" content="0; url=./ctk/" />
-  <link rel="canonical" href="./ctk/" />
-  <script>location.replace("./ctk/");</script>
+  <title>Metin2 Helpers by Jogoe – Catch the King &amp; Seherwettstreit Solvers</title>
+  <meta name="description" content="Free open-source in-browser helpers for Metin2 events by Jogoe: Catch the King / Schnapp den König and Seherwettstreit / Duel of the Seers." />
+  <meta name="keywords" content="Metin2, Metin2 Helfer, Metin2 Helper, Metin2 Solver, Schnapp den König, Catch the King, Seherwettstreit, Duel of the Seers, Jogoe" />
+  <meta name="author" content="Jogoe" />
+  <link rel="canonical" href="https://dominikloefflerniteo.github.io/ctk-helper-jogoe/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Metin2 Helpers by Jogoe" />
+  <meta property="og:description" content="Free in-browser solvers for Metin2 events: Catch the King and Seherwettstreit." />
+  <link rel="icon" type="image/svg+xml" href="ctk/favicon.svg" />
   <style>
-    body { font-family: system-ui, sans-serif; background: #1a1d24; color: #e7ecf3; padding: 32px; }
-    a { color: #f2c94c; }
+    :root {
+      --bg: #1a1d24; --bg-2: #23272f; --bg-3: #2c313a;
+      --fg: #e7ecf3; --fg-dim: #9aa3b1; --accent: #f2c94c; --border: #3a414c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: radial-gradient(circle at 50% -10%, #232838 0%, var(--bg) 60%);
+      color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      display: flex; flex-direction: column;
+    }
+    header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; }
+    header h1 { margin: 0; font-size: 17px; letter-spacing: .3px; }
+    header .accent { color: var(--accent); }
+    header .discord { margin-left: auto; color: var(--fg-dim); font-size: 13px; font-family: ui-monospace, Menlo, monospace; }
+    main { flex: 1; width: 100%; max-width: 880px; margin: 0 auto; padding: 48px 20px; }
+    .lead { text-align: center; margin: 0 0 8px; font-size: 28px; font-weight: 800; }
+    .sub { text-align: center; margin: 0 auto 40px; max-width: 560px; color: var(--fg-dim); font-size: 14px; line-height: 1.5; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: inherit;
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px; padding: 24px 22px;
+      transition: transform .1s ease, border-color .12s ease, box-shadow .12s ease;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+    .card-emoji { font-size: 38px; line-height: 1; }
+    .card-title { font-size: 20px; font-weight: 800; }
+    .card-sub { font-size: 13px; color: var(--accent); font-weight: 600; }
+    .card-desc { font-size: 13px; color: var(--fg-dim); line-height: 1.55; }
+    .card-cta { margin-top: 6px; font-size: 13px; font-weight: 700; color: var(--accent); }
+    .card-stat { font-size: 12px; color: var(--fg-dim); border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px; }
+    footer { padding: 18px 20px; border-top: 1px solid var(--border); text-align: center; color: var(--fg-dim); font-size: 12px; }
+    footer a { color: var(--accent); }
   </style>
 </head>
 <body>
-  <p>Redirecting to <a href="./ctk/">Catch the King helper</a>…</p>
+  <header>
+    <h1>Metin2 Helpers <span class="accent">· by Jogoe</span></h1>
+    <span class="discord">discord: @jogoe</span>
+  </header>
+
+  <main>
+    <h2 class="lead">Pick a helper</h2>
+    <p class="sub">Free, open-source, ad-free in-browser solvers for Metin2 event mini-games. Nothing to install — they run right in your browser.</p>
+
+    <div class="grid">
+      <a class="card" href="./ctk/">
+        <div class="card-emoji">👑</div>
+        <div class="card-title">Catch the King</div>
+        <div class="card-sub">Schnapp den König · Goldene Königsbeute</div>
+        <div class="card-desc">Live move suggester for the 5×5 board mini-game. Tracks the hidden 5s and the King and shows your live gold-chest chance (~44.8% gold at full follow).</div>
+        <div class="card-cta">Open helper →</div>
+        <div class="card-stat">🏆 1,191,118 games played in 2026 · 41% gold</div>
+      </a>
+
+      <a class="card" href="./seer/">
+        <div class="card-emoji">🔮</div>
+        <div class="card-title">Seherwettstreit</div>
+        <div class="card-sub">Seherwettstreit · Duel of the Seers</div>
+        <div class="card-desc">Card-duel move suggester. When the computer leads, it tracks its hidden cards and tells you the best reply — turning a coin flip into ~54% duels won.</div>
+        <div class="card-cta">Open helper →</div>
+        <div class="card-stat">🃏 9-card duel · maximises your coin margin</div>
+      </a>
+    </div>
+  </main>
+
+  <footer>
+    Clean-room helpers for Metin2 · made by <a href="https://paypal.me/jogoe" target="_blank" rel="noopener">Jogoe</a> · discord @jogoe
+  </footer>
 </body>
 </html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seherwettstreit / Duel of the Seers Helper – Metin2 Solver</title>
+  <meta name="description" content="Free open-source helper for the Metin2 Seherwettstreit (Duel of the Seers) card event. Tracks the opponent's hidden cards and suggests the best card every round." />
+  <meta name="keywords" content="Seherwettstreit, Duel of the Seers, Seher, Metin2, Metin2 Helfer, Metin2 Helper, Metin2 Solver, Tarot, Kartenspiel, Sehermünzen, Sehertruhe" />
+  <meta name="author" content="Jogoe" />
+  <link rel="canonical" href="https://dominikloefflerniteo.github.io/ctk-helper-jogoe/seer/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Seherwettstreit / Duel of the Seers Helper – Metin2 Solver" />
+  <meta property="og:description" content="Solver for the Metin2 Seherwettstreit card event. Live card suggestions that track the opponent's hidden hand." />
+  <meta property="og:url" content="https://dominikloefflerniteo.github.io/ctk-helper-jogoe/seer/" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="de_DE" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="seer.css" />
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>Seer helper <span class="subtle" data-i18n="subtitle">Seherwettstreit move suggester</span></h1>
+    </div>
+    <p class="page-intro" data-i18n-html="pageIntro"></p>
+    <div class="header-meta">
+      <div class="header-controls">
+        <div class="lang-switcher" role="group" aria-label="Language">
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+          <button type="button" class="lang-btn" data-lang="de">DE</button>
+        </div>
+      </div>
+      <span class="discord">discord: @jogoe</span>
+      <span class="version">seer · v0.3<span class="version-views" id="versionViews"></span></span>
+    </div>
+  </header>
+
+  <div class="page">
+  <main>
+    <!-- LEFT: stats + donate -->
+    <aside class="stats-panel">
+      <div class="info-block">
+        <div class="label" data-i18n="statsTitle">Does the helper actually help?</div>
+        <p class="seer-stats-lead" data-i18n-html="statsLead"></p>
+        <ul class="seer-regimes">
+          <li class="seer-regime good">
+            <span class="sr-tag" data-i18n="scMixTag">🎲 50 / 50 mix</span>
+            <span class="sr-big">46%</span>
+            <span class="sr-real" data-i18n="realCase">★ what actually happens in-game</span>
+            <span class="sr-cmp" data-i18n="scMixCmp"></span>
+          </li>
+          <li class="seer-regime">
+            <span class="sr-tag" data-i18n="scPcTag">🤖 Computer starts</span>
+            <span class="sr-big">54%</span>
+            <span class="sr-cmp" data-i18n="scPcCmp"></span>
+          </li>
+          <li class="seer-regime meh">
+            <span class="sr-tag" data-i18n="scMeTag">🫵 You start</span>
+            <span class="sr-big">38.5%</span>
+            <span class="sr-cmp" data-i18n="scMeCmp"></span>
+          </li>
+        </ul>
+        <div class="seer-stats-foot" data-i18n="statsFoot"></div>
+      </div>
+
+      <div class="like-block">
+        <p class="like-prompt" data-i18n="likePrompt">Enjoying the helper? Drop a like!</p>
+        <button id="likeBtn" class="like-btn" type="button" aria-label="Like" title="Like">
+          <span class="like-heart">♥</span>
+          <span id="likeCount" class="like-count">…</span>
+        </button>
+      </div>
+
+      <div class="promo-text" data-i18n-html="supportText">
+        <strong>This helper will never have ads.</strong> If you want to support the project, you can donate on <a href="https://paypal.me/jogoe" target="_blank" rel="noopener">PayPal</a> &mdash; every bit truly means a lot. Thank you! &lt;3
+      </div>
+    </aside>
+
+    <!-- CENTER: the play flow -->
+    <section class="board-panel">
+      <div class="play">
+
+        <!-- STEP 0: who leads -->
+        <div id="leaderPick" class="stage">
+          <div class="big-q" data-i18n="whoFirst">Who plays first this game?</div>
+          <div class="big-choice">
+            <button id="leaderMe" class="choice-btn" type="button">
+              <span class="choice-emoji">🫵</span>
+              <span class="choice-main" data-i18n="iStart">I start</span>
+              <span class="choice-sub" data-i18n="iStartSub">I place my card first</span>
+            </button>
+            <button id="leaderOpp" class="choice-btn" type="button">
+              <span class="choice-emoji">🤖</span>
+              <span class="choice-main" data-i18n="pcStart">Computer starts</span>
+              <span class="choice-sub" data-i18n="pcStartSub">I see its colour, then answer</span>
+            </button>
+          </div>
+          <p class="stage-note" data-i18n="leaderNote">Fixed for the whole game — pick whoever placed the first card.</p>
+        </div>
+
+        <!-- STEP A: I lead → just play 0..8, no thinking -->
+        <div id="meStage" class="stage" hidden>
+          <div class="banner-tip">
+            <div class="banner-emoji">🎲</div>
+            <div>
+              <div class="banner-title" data-i18n="meTitle">You go first — just play 0 → 8 in order</div>
+              <div class="banner-body" data-i18n-html="meBody"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP B: computer leads → colour, then result -->
+        <div id="oppStage" class="stage" hidden>
+          <div id="askColour" class="ask">
+            <div class="ask-q" data-i18n="colourQ">What colour is the computer's card?</div>
+            <div class="big-choice two">
+              <button id="colorBlack" class="choice-btn col-black" type="button">
+                <span class="choice-main" data-i18n="black">Black</span>
+                <span class="choice-sub" data-i18n="blackSub">even · 0 2 4 6 8</span>
+              </button>
+              <button id="colorWhite" class="choice-btn col-white" type="button">
+                <span class="choice-main" data-i18n="white">White</span>
+                <span class="choice-sub" data-i18n="whiteSub">odd · 1 3 5 7</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="askResult" class="ask" hidden>
+            <div class="play-card-cue">
+              <span class="cue-label" data-i18n="playThis">Play this card</span>
+              <span id="recCard" class="rec-card">–</span>
+              <span id="recMeta" class="cue-meta"></span>
+            </div>
+            <div class="ask-q" data-i18n="resultQ">Did your card win?</div>
+            <div class="big-choice three">
+              <button id="resHigher" class="choice-btn res-win" type="button">
+                <span class="choice-main" data-i18n="won">Won</span>
+                <span class="choice-sub" data-i18n="wonSub">mine higher</span>
+              </button>
+              <button id="resEqual" class="choice-btn res-tie" type="button">
+                <span class="choice-main" data-i18n="equal">Equal</span>
+                <span class="choice-sub" data-i18n="equalSub">same number</span>
+              </button>
+              <button id="resLower" class="choice-btn res-loss" type="button">
+                <span class="choice-main" data-i18n="lost">Lost</span>
+                <span class="choice-sub" data-i18n="lostSub">mine lower</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="oppOver" class="ask over" hidden>
+            <div class="over-emoji">🏁</div>
+            <div id="overText" class="over-text"></div>
+          </div>
+
+          <ol id="roundsLog" class="rounds-log"></ol>
+        </div>
+      </div>
+
+      <div class="help">
+        <p data-i18n-html="helpIntro"></p>
+        <ul>
+          <li data-i18n-html="helpLeader"></li>
+          <li data-i18n-html="helpColour"></li>
+          <li data-i18n-html="helpResult"></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- RIGHT: live status + controls -->
+    <aside class="info-panel">
+      <div class="info-block" id="scoreBlock">
+        <div class="label" data-i18n="score">Score</div>
+        <ul class="seer-score">
+          <li><span class="ss-k" data-i18n="you">You</span><span id="scoreMe" class="ss-v">0</span></li>
+          <li><span class="ss-k" data-i18n="opponent">Opponent</span><span id="scoreOpp" class="ss-v">0</span></li>
+          <li class="ss-margin"><span class="ss-k" data-i18n="margin">Margin</span><span id="scoreMargin" class="stat-v">0</span></li>
+          <li><span class="ss-k" data-i18n="round">Round</span><span id="roundNum" class="ss-v">1 / 9</span></li>
+        </ul>
+      </div>
+
+      <div class="info-block" id="oppCardsBlock">
+        <div class="label" data-i18n="oppCardsLeft">Opponent's cards left</div>
+        <div class="opp-left">
+          <span class="chip chip-black"><span data-i18n="black">Black</span> <b id="oppBlack">5</b></span>
+          <span class="chip chip-white"><span data-i18n="white">White</span> <b id="oppWhite">4</b></span>
+        </div>
+      </div>
+
+      <div class="info-block button-row" id="controlsBlock">
+        <button id="undoBtn" class="action-btn" type="button" disabled data-i18n="undo">Undo</button>
+        <button id="resetBtn" class="action-btn danger" type="button" data-i18n="reset">Reset</button>
+      </div>
+
+      <div class="info-block model-note" id="modelNoteBlock" data-i18n="modelNote"></div>
+    </aside>
+  </main>
+
+  <aside class="chat-panel">
+    <div class="info-block chat-block">
+      <div class="label">
+        <span data-i18n="twitchChat">Chat</span>
+      </div>
+      <div id="twitchChatMount" class="twitch-chat-mount">
+        <div id="twitchConsent" class="twitch-consent">
+          <p data-i18n-html="twitchConsentBody"></p>
+          <button id="twitchConsentBtn" type="button" class="action-btn" data-i18n="twitchConsentBtn">Load Twitch chat</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+  </div>
+
+  <article class="long-form" id="guide">
+    <section lang="de" class="long-form-section">
+      <h2>Seherwettstreit – Spiel, Regeln, Strategie</h2>
+      <p>
+        Der <strong>Seherwettstreit</strong> (englisch: <em>Duel of the Seers</em>) ist
+        ein Karten-Event in <strong>Metin2</strong>. Beide Seiten halten die Karten
+        <b>0 bis 8</b> (jede genau einmal). Gerade Zahlen sind <b>schwarz</b>, ungerade
+        <b>weiß</b>. Über <b>9 Runden</b> legt jede Seite eine Karte; du siehst nur die
+        <b>Farbe</b> der Gegnerkarte und ob deine höher, gleich oder niedriger war.
+      </p>
+      <h3>Ziel &amp; Münzen</h3>
+      <p>
+        Jede gewonnene Runde gibt einen Punkt (= eine Münze). Gewinnst du das Duell
+        insgesamt, bekommst du zusätzlich Münzen in Höhe der Punktedifferenz. Es geht
+        also um den <b>Vorsprung</b> (Siege − Niederlagen).
+      </p>
+      <h3>Strategie</h3>
+      <p>
+        Wer beginnt, ist für das ganze Spiel fixiert. Beginnt der <b>Computer</b>, siehst
+        du seine Farbe zuerst — hier rechnet der Helfer die verdeckten Karten mit und
+        nennt dir die beste Antwortkarte (≈ 54 % Duell-Siege statt 39 % beim Raten).
+        Beginnst <b>du</b>, ist die Reihenfolge mathematisch egal — dann einfach
+        0 → 8 spielen.
+      </p>
+    </section>
+
+    <section lang="en" class="long-form-section">
+      <h2>Duel of the Seers – Game, Rules, Strategy</h2>
+      <p>
+        <strong>Duel of the Seers</strong> (German: <em>Seherwettstreit</em>) is a card
+        event in <strong>Metin2</strong>. Both sides hold the cards <b>0 to 8</b> (each
+        exactly once). Even numbers are <b>black</b>, odd numbers are <b>white</b>. Over
+        <b>9 rounds</b> each side plays one card; you only see the opponent card's
+        <b>colour</b> and whether yours was higher, equal or lower.
+      </p>
+      <h3>Goal &amp; coins</h3>
+      <p>
+        Each round you win scores a point (one coin). If you win the duel overall, you
+        get bonus coins equal to the point difference. So the real objective is your
+        <b>margin</b> (wins − losses).
+      </p>
+      <h3>Strategy</h3>
+      <p>
+        Who starts is fixed for the whole game. When the <b>computer</b> leads you see
+        its colour first — that's where the helper tracks the hidden cards and gives you
+        the best reply (~54% duels won vs 39% guessing). When <b>you</b> lead, the order
+        is mathematically irrelevant — just play 0 → 8.
+      </p>
+    </section>
+  </article>
+
+  <footer>
+    <span class="subtle" data-i18n="footer">Clean-room helper for Metin2 · Seherwettstreit</span>
+    <span class="footer-sep">·</span>
+    <button class="footer-link" type="button" onclick="location.href='../'" data-i18n="allHelpers">All helpers</button>
+    <span class="footer-sep">·</span>
+    <button class="footer-link" type="button" data-open-modal="impressumModal" data-i18n="impressum">Impressum</button>
+    <span class="footer-sep">·</span>
+    <button class="footer-link" type="button" data-open-modal="datenschutzModal" data-i18n="privacy">Privacy</button>
+  </footer>
+
+  <button id="chatBtn" class="chat-tab" type="button" aria-label="Toggle chat" title="Toggle chat">
+    <span class="chat-tab-arrow"></span>
+  </button>
+
+  <div id="impressumModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="impressumTitle" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" tabindex="-1">
+      <button class="modal-close" type="button" aria-label="Close" data-close>&times;</button>
+      <h2 id="impressumTitle" data-i18n="impressumTitle">Impressum</h2>
+      <div data-i18n-html="impressumBody"></div>
+    </div>
+  </div>
+
+  <div id="datenschutzModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="datenschutzTitle" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card" tabindex="-1">
+      <button class="modal-close" type="button" aria-label="Close" data-close>&times;</button>
+      <h2 id="datenschutzTitle" data-i18n="datenschutzTitle">Datenschutzerklärung</h2>
+      <div data-i18n-html="datenschutzBody"></div>
+      <div class="datenschutz-controls">
+        <button id="revokeTwitchConsentBtn" type="button" class="action-btn" data-i18n="revokeTwitchConsent">Revoke Twitch chat consent</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

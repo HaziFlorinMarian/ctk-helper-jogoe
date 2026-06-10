@@ -25,7 +25,7 @@ function renderCharList() {
   const ul = document.getElementById("char-list");
   ul.innerHTML = "";
   if (state.characters.length === 0) {
-    ul.innerHTML = '<li class="empty small">No characters yet.</li>';
+    ul.innerHTML = `<li class="empty small">${t("editEmpty")}</li>`;
     return;
   }
   for (const c of state.characters) {
@@ -33,7 +33,7 @@ function renderCharList() {
     li.className = "entity" + (state.selectedId === c.id ? " active" : "");
     li.innerHTML = `
       <span class="ent-name">${escapeHtml(c.name)}</span>
-      <span class="ent-meta">${CLASSES[c.cls]?.name || ""} · Lv ${c.level}</span>
+      <span class="ent-meta">${escapeHtml(L(CLASSES[c.cls]?.name))} · Lv ${c.level}</span>
     `;
     li.addEventListener("click", () => { state.selectedId = c.id; renderAll(); });
     ul.appendChild(li);
@@ -48,14 +48,62 @@ function renderMobList(filter = "monster") {
     const li = document.createElement("li");
     li.className = "entity";
     li.innerHTML = `
-      <span class="ent-name">${escapeHtml(m.name)}</span>
+      <span class="ent-name">${escapeHtml(L(m.name))}</span>
       <span class="ent-meta">${m.kind} · Lv ${m.level} · HP ${m.hp.toLocaleString()}</span>
     `;
     ul.appendChild(li);
   }
 }
 
-// ===== Edit form =====
+// ===== Edit form (dynamic from FIELDS catalogue) =====
+// Section meta — title comes from i18n key (sec_<group>).
+const SECTION_META = {
+  identity:         { open: true },
+  weapon:           { open: true },
+  damageDefense:    { open: false },
+  elemental:        { open: false },
+  classBonuses:     { open: false },
+  weaponDefRupture: { open: false },
+  otherBonuses:     { open: false },
+  hidden:           { open: false },
+  marriage:         { open: false },
+  mountPoly:        { open: false },
+};
+
+function fieldInput(field, value) {
+  const k = field.k;
+  const v = value === undefined ? "" : value;
+  if (field.type === "class") {
+    return `<select data-f="${k}">${
+      Object.entries(CLASSES).map(([id, c]) =>
+        `<option value="${id}"${id === v ? " selected" : ""}>${escapeHtml(L(c.name))}</option>`).join("")
+    }</select>`;
+  }
+  if (field.type === "weaponType") {
+    const opts = [
+      ["sword_1h","Sword (1H)"],["sword_2h","Sword (2H)"],["dagger","Dagger"],
+      ["bow","Bow"],["bell","Bell"],["fan","Fan"],["claw","Claw"],["lame","Blade (Lame)"],
+    ];
+    return `<select data-f="${k}">${
+      opts.map(([id, n]) => `<option value="${id}"${id === v ? " selected" : ""}>${n}</option>`).join("")
+    }</select>`;
+  }
+  if (field.type === "weaponPreset") {
+    const c = state.characters.find(x => x.id === state.selectedId) || {};
+    const list = WEAPONS[c.wpnType] || [];
+    const opts = list.map(w =>
+      `<option value="${w.id}"${w.id === v ? " selected" : ""}>${escapeHtml(L(w.name))} (Lv ${w.level})</option>`).join("");
+    return `<select data-f="${k}"><option value="">${t("pickWeapon")}</option>${opts}</select>`;
+  }
+  if (field.type === "bool") {
+    return `<input type="checkbox" data-f="${k}"${v ? " checked" : ""} />`;
+  }
+  if (field.type === "text") {
+    return `<input type="text" data-f="${k}" value="${escapeHtml(v)}" />`;
+  }
+  return `<input type="number" data-f="${k}" value="${v}" />`;
+}
+
 function renderEditForm() {
   const empty = document.getElementById("edit-empty");
   const form = document.getElementById("edit-form");
@@ -67,24 +115,56 @@ function renderEditForm() {
   }
   empty.classList.add("hidden");
   form.classList.remove("hidden");
-  form.querySelectorAll("[data-f]").forEach(el => {
-    const k = el.dataset.f;
-    if (c[k] !== undefined) el.value = c[k];
-  });
+
+  const container = document.getElementById("edit-sections");
+  let html = "";
+  for (const [group, meta] of Object.entries(SECTION_META)) {
+    const fields = FIELDS[group] || [];
+    if (!fields.length) continue;
+    html += `<details${meta.open ? " open" : ""}><summary>${t("sec_" + group)}</summary><div class="grid">`;
+    for (const f of fields) {
+      html += `<label>${escapeHtml(L(f.label))} ${fieldInput(f, c[f.k])}</label>`;
+    }
+    html += `</div></details>`;
+  }
+  container.innerHTML = html;
 }
 
 function bindEditForm() {
-  document.getElementById("edit-form").addEventListener("input", e => {
+  const form = document.getElementById("edit-form");
+  const handler = e => {
     const k = e.target.dataset.f;
     if (!k) return;
     const c = state.characters.find(x => x.id === state.selectedId);
     if (!c) return;
-    const v = e.target.type === "number" ? parseFloat(e.target.value) || 0 : e.target.value;
+    let v;
+    if (e.target.type === "checkbox") v = e.target.checked;
+    else if (e.target.type === "number") v = parseFloat(e.target.value) || 0;
+    else v = e.target.value;
     c[k] = v;
+
+    // Auto-fill on weapon preset change.
+    if (k === "wpnPreset" && v) {
+      const w = (WEAPONS[c.wpnType] || []).find(x => x.id === v);
+      if (w) {
+        c.wpnMin = w.min;
+        c.wpnMax = w.max;
+        c.wpnMagic = w.magic;
+      }
+      renderEditForm();
+    }
+    // Reset preset when weapon type changes (list no longer matches).
+    if (k === "wpnType") {
+      c.wpnPreset = "";
+      renderEditForm();
+    }
+
     saveState();
     renderCharList();
     renderSlots();
-  });
+  };
+  form.addEventListener("input", handler);
+  form.addEventListener("change", handler);
 }
 
 document.getElementById("btn-new-char").addEventListener("click", () => {
@@ -106,7 +186,7 @@ document.getElementById("btn-duplicate").addEventListener("click", () => {
 });
 
 document.getElementById("btn-delete").addEventListener("click", () => {
-  if (!confirm("Delete this character?")) return;
+  if (!confirm(t("confirmDeleteChar"))) return;
   state.characters = state.characters.filter(c => c.id !== state.selectedId);
   if (state.attackerId === state.selectedId) state.attackerId = null;
   if (state.defenderId === state.selectedId) state.defenderId = null;
@@ -116,8 +196,8 @@ document.getElementById("btn-delete").addEventListener("click", () => {
 });
 
 // ===== Monster filter buttons =====
-document.getElementById("btn-pick-monster").addEventListener("click", () => renderMobList("monster"));
-document.getElementById("btn-pick-stone").addEventListener("click", () => renderMobList("metin"));
+document.getElementById("btn-pick-monster").addEventListener("click", () => { mobFilter = "monster"; renderMobList(mobFilter); });
+document.getElementById("btn-pick-stone").addEventListener("click", () => { mobFilter = "metin"; renderMobList(mobFilter); });
 
 // ===== Battle combatant slots =====
 function renderSlots() {
@@ -131,15 +211,16 @@ function renderSlot(role, id) {
     slot.classList.remove("filled");
     slot.innerHTML = `
       <div class="combatant-placeholder">+</div>
-      <div class="combatant-label">${role === "attacker" ? "Who deals the damage?" : "Who takes the damage?"}</div>
+      <div class="combatant-label">${t(role === "attacker" ? "whoDeals" : "whoTakes")}</div>
     `;
   } else {
     slot.classList.add("filled");
+    const displayName = c.kind === "character" ? c.name : L(c.name);
     const sub = c.kind === "character"
-      ? `${CLASSES[c.cls]?.name || ""} · Lv ${c.level}`
+      ? `${escapeHtml(L(CLASSES[c.cls]?.name))} · Lv ${c.level}`
       : `${c.kind} · Lv ${c.level}`;
     slot.innerHTML = `
-      <div class="combatant-name">${escapeHtml(c.name)}</div>
+      <div class="combatant-name">${escapeHtml(displayName)}</div>
       <div class="combatant-sub">${sub}</div>
       <button class="combatant-clear" title="Remove">×</button>
     `;
@@ -167,8 +248,8 @@ function openPicker(role) {
   list.innerHTML = "";
 
   const sections = role === "attacker"
-    ? [["Characters", state.characters]]
-    : [["Characters", state.characters], ["Monsters", MOBS.filter(m => m.kind !== "metin")], ["Stones", MOBS.filter(m => m.kind === "metin")]];
+    ? [[t("characters"), state.characters]]
+    : [[t("characters"), state.characters], [t("monsters"), MOBS.filter(m => m.kind !== "metin")], [t("stones"), MOBS.filter(m => m.kind === "metin")]];
 
   for (const [title, items] of sections) {
     if (!items.length) continue;
@@ -178,8 +259,9 @@ function openPicker(role) {
     for (const it of items) {
       const btn = document.createElement("button");
       btn.className = "picker-item";
-      btn.innerHTML = `<strong>${escapeHtml(it.name)}</strong>
-        <span>${it.kind === "character" ? (CLASSES[it.cls]?.name || "") : it.kind} · Lv ${it.level}</span>`;
+      const itName = it.kind === "character" ? it.name : L(it.name);
+      btn.innerHTML = `<strong>${escapeHtml(itName)}</strong>
+        <span>${escapeHtml(it.kind === "character" ? L(CLASSES[it.cls]?.name) : it.kind)} · Lv ${it.level}</span>`;
       btn.addEventListener("click", () => {
         if (role === "attacker") state.attackerId = it.id; else state.defenderId = it.id;
         saveState();
@@ -221,11 +303,11 @@ document.getElementById("btn-simulate").addEventListener("click", () => {
   const atk = findCombatant(state.attackerId);
   const def = findCombatant(state.defenderId);
   if (!atk || !def) {
-    alert("Pick both an attacker and a defender first.");
+    alert(t("pickBoth"));
     return;
   }
   if (atk.kind !== "character") {
-    alert("Attacker must be a character (monsters as attackers aren't supported yet).");
+    alert(t("attackerMustBeChar"));
     return;
   }
   const attack = { ...state.attack };
@@ -235,7 +317,8 @@ document.getElementById("btn-simulate").addEventListener("click", () => {
   showLatest(atk, def, attack, det, sim);
   state.history.unshift({
     ts: Date.now(),
-    attacker: atk.name, defender: def.name,
+    attacker: atk.kind === "character" ? atk.name : L(atk.name),
+    defender: def.kind === "character" ? def.name : L(def.name),
     mode: attack.mode,
     avg: sim.avg, min: det.min, max: det.max,
   });
@@ -291,7 +374,7 @@ function renderHistory() {
   const tbody = document.getElementById("history-body");
   tbody.innerHTML = "";
   if (state.history.length === 0) {
-    tbody.innerHTML = `<tr id="history-empty"><td colspan="7" class="empty">No battle yet — pick two combatants and hit <em>Simulate the Battle</em>.</td></tr>`;
+    tbody.innerHTML = `<tr id="history-empty"><td colspan="7" class="empty">${t("historyEmpty")}</td></tr>`;
     return;
   }
   state.history.forEach((h, idx) => {
@@ -313,7 +396,7 @@ function renderHistory() {
   }));
 }
 document.getElementById("btn-clear-history").addEventListener("click", () => {
-  if (!confirm("Clear all battle history?")) return;
+  if (!confirm(t("confirmClearHistory"))) return;
   state.history = [];
   saveState(); renderHistory();
 });
@@ -335,18 +418,31 @@ document.getElementById("file-import").addEventListener("change", async e => {
     const data = JSON.parse(txt);
     Object.assign(state, data);
     saveState(); renderAll();
-  } catch { alert("Invalid file."); }
+  } catch { alert(t("invalidFile")); }
 });
+
+// ===== Language switcher =====
+document.querySelectorAll(".lang-btn").forEach(btn => {
+  btn.addEventListener("click", () => setLang(btn.dataset.lang));
+});
+function refreshLangButtons() {
+  document.querySelectorAll(".lang-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.lang === getLang()));
+}
 
 // ===== Helpers =====
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
+let mobFilter = "monster";
 function renderAll() {
+  applyToDOM();
+  refreshLangButtons();
   renderCharList();
   renderEditForm();
   renderSlots();
+  renderMobList(mobFilter);
   renderHistory();
 }
 

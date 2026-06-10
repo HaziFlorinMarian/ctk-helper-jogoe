@@ -569,11 +569,8 @@ if (farewellBtn) {
     openModal("farewellModal");
   });
 }
-// Auto-open every page load — small defer so the page paints first.
-setTimeout(() => {
-  populateFarewell();
-  openModal("farewellModal");
-}, 300);
+// Event is over — the wrapped no longer auto-opens. It stays reachable from the
+// header 🎉 button, and the page now carries a static 2026 recap instead.
 
 document.getElementById("farewellDownloadBtn")?.addEventListener("click", async () => {
   const blob = await captureFarewellPng();
