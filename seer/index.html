@@ -68,6 +68,28 @@
         <div class="seer-stats-foot" data-i18n="statsFoot"></div>
       </div>
 
+      <div class="info-block">
+        <div class="label session-label">
+          <span data-i18n="session">Session</span>
+          <button id="seerSessionReset" class="session-reset" type="button" data-i18n="reset" title="Reset session">Reset</button>
+        </div>
+        <ul class="session-list">
+          <li class="session-row"><span class="session-name" data-i18n="games">Games</span><span id="seerSessGames">0</span></li>
+          <li class="session-row"><span class="session-name" data-i18n="avgCoins">Avg coins/game</span><span id="seerSessAvg">–</span></li>
+        </ul>
+      </div>
+
+      <div class="info-block">
+        <div class="label"><span data-i18n="globalAllTime">Everyone (all time)</span></div>
+        <ul class="session-list">
+          <li class="session-row"><span class="session-name" data-i18n="games">Games</span><span id="seerGlobGames">…</span></li>
+          <li class="session-row"><span class="session-name" data-i18n="avgCoins">Avg coins/game</span><span id="seerGlobAvg">…</span></li>
+        </ul>
+        <div class="label sub" data-i18n="coinDist">Coins per game</div>
+        <ul id="seerCoinDist" class="coin-dist"></ul>
+        <div class="cd-note" data-i18n="statsScope"></div>
+      </div>
+
       <div class="like-block">
         <p class="like-prompt" data-i18n="likePrompt">Enjoying the helper? Drop a like!</p>
         <button id="likeBtn" class="like-btn" type="button" aria-label="Like" title="Like">

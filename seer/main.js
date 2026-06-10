@@ -32,6 +32,9 @@ const els = {
 
   likeBtn: $("likeBtn"), likeCount: $("likeCount"),
   chatBtn: $("chatBtn"), twitchChatMount: $("twitchChatMount"),
+  seerSessGames: $("seerSessGames"), seerSessAvg: $("seerSessAvg"),
+  seerSessionReset: $("seerSessionReset"),
+  seerGlobGames: $("seerGlobGames"), seerGlobAvg: $("seerGlobAvg"), seerCoinDist: $("seerCoinDist"),
   toast: $("toast"),
 };
 
@@ -39,6 +42,7 @@ const state = createState();
 let leader = null;            // null | "me" | "opp"
 let pendingColor = null;      // current round's revealed colour ("black"|"white")
 let recCard = null;           // suggested card for the current round
+let gameCounted = false;      // guard: count each finished game's coins exactly once
 
 // ---------- branch switching ----------
 // leaderPick: only the two big buttons. me: only the explanatory banner.
@@ -65,6 +69,7 @@ function newGame() {
   leader = null;
   resetState(state);
   pendingColor = null; recCard = null;
+  gameCounted = false;
   show("leader");
   renderStatus(els, state);
 }
@@ -88,8 +93,13 @@ function setResult(result) {
   if (pendingColor == null || recCard == null) return;
   recordRound(state, { leader: "opp", myCard: recCard, oppColor: pendingColor, result });
   pendingColor = null; recCard = null;
-  if (gameOver(state)) toast(t("finalCoins", finalStats()));
-  else toast(t("recordedRound", { n: state.rounds.length }));
+  if (gameOver(state)) {
+    const s = finalStats();
+    if (!gameCounted) { gameCounted = true; recordGameCoins(s.coins); }
+    toast(t("finalCoins", s));
+  } else {
+    toast(t("recordedRound", { n: state.rounds.length }));
+  }
   renderOpp();
 }
 
@@ -246,6 +256,75 @@ const versionViewsEl = $("versionViews");
     if (Number.isFinite(d.value)) versionViewsEl.textContent = `${d.value.toLocaleString()} page opens`;
   } catch {}
 })();
+
+// ---------- session + global coin counters ----------
+// Coins/game range 0..16 (max achievable is 15). Each finished computer-leads game
+// bumps one bucket. Session is local; global lives in abacus counters coins-0..16,
+// total games = the sum of the buckets.
+const MAXC = 16;
+const SESSION_KEY = "seer-session-v1";
+function loadSession() {
+  try { const r = JSON.parse(localStorage.getItem(SESSION_KEY) || "{}"); return { games: r.games || 0, coinsSum: r.coinsSum || 0 }; }
+  catch { return { games: 0, coinsSum: 0 }; }
+}
+function saveSession(s) { try { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); } catch {} }
+let session = loadSession();
+function renderSession() {
+  if (els.seerSessGames) els.seerSessGames.textContent = session.games.toLocaleString();
+  if (els.seerSessAvg) els.seerSessAvg.textContent = session.games ? (session.coinsSum / session.games).toFixed(2) : "–";
+}
+
+const globalDist = new Array(MAXC + 1).fill(null);
+function renderGlobal() {
+  let total = 0, sumCoins = 0, have = false, max = 0;
+  for (let n = 0; n <= MAXC; n++) {
+    const v = globalDist[n];
+    if (Number.isFinite(v)) { have = true; total += v; sumCoins += n * v; if (v > max) max = v; }
+  }
+  if (els.seerGlobGames) els.seerGlobGames.textContent = have ? total.toLocaleString() : "…";
+  if (els.seerGlobAvg) els.seerGlobAvg.textContent = have ? (total ? (sumCoins / total).toFixed(2) : "–") : "…";
+  if (!els.seerCoinDist) return;
+  els.seerCoinDist.innerHTML = "";
+  for (let n = 0; n <= MAXC; n++) {
+    const v = globalDist[n] || 0;
+    const isDefault = n >= 2 && n <= 7;     // always show 2–7; others only if >0
+    if (!isDefault && v <= 0) continue;
+    const li = document.createElement("li");
+    li.className = "cd-row" + (isDefault ? " cd-default" : "");
+    const w = max > 0 ? Math.round((v / max) * 100) : 0;
+    li.innerHTML =
+      `<span class="cd-n">${n}</span>` +
+      `<span class="cd-bar"><i style="width:${w}%"></i></span>` +
+      `<span class="cd-c">${v.toLocaleString()}</span>`;
+    els.seerCoinDist.appendChild(li);
+  }
+}
+async function fetchGlobalDist() {
+  await Promise.all(Array.from({ length: MAXC + 1 }, (_, n) =>
+    fetch(`${ABACUS}/get/${NS}/coins-${n}`)
+      .then((r) => r.status === 404 ? 0 : r.ok ? r.json().then((d) => Number.isFinite(d.value) ? d.value : 0) : 0)
+      .catch(() => 0)
+      .then((v) => { globalDist[n] = v; })
+  ));
+  renderGlobal();
+}
+async function hitGlobalCoins(n) {
+  try {
+    const r = await fetch(`${ABACUS}/hit/${NS}/coins-${n}`);
+    if (r.ok) { const d = await r.json(); if (Number.isFinite(d.value)) { globalDist[n] = d.value; renderGlobal(); } }
+  } catch {}
+}
+function recordGameCoins(coins) {
+  const n = Math.max(0, Math.min(MAXC, coins | 0));
+  session.games++; session.coinsSum += coins; saveSession(session); renderSession();
+  hitGlobalCoins(n);
+}
+if (els.seerSessionReset) els.seerSessionReset.addEventListener("click", () => {
+  session = { games: 0, coinsSum: 0 };
+  saveSession(session); renderSession();
+});
+renderSession();
+fetchGlobalDist();
 
 // ---------- keyboard ----------
 document.addEventListener("keydown", (e) => {
